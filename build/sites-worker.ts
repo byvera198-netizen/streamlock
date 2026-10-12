@@ -3,6 +3,7 @@ import { runWithConnectorBinding } from "../lib/connector-context";
 import type { ConnectorBinding } from "../lib/connector-contract.mjs";
 import { cleanupExpiredLiveSales } from "../db/live-sales-cleanup";
 import { autoReleaseDeliveredOrders } from "../db/order-auto-release";
+import { cancelAbandonedOrders } from "../db/order-abandonment";
 
 export default {
   fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext<{ CONNECTORS?: ConnectorBinding }>) {
@@ -31,6 +32,7 @@ export default {
     ctx.waitUntil(Promise.all([
       cleanupExpiredLiveSales({ DB: env.DB, RECEIPTS: env.RECEIPTS }),
       autoReleaseDeliveredOrders({ DB: env.DB }),
+      cancelAbandonedOrders({ DB: env.DB }),
     ]).catch((error) => {
       console.error("[streamlock] Scheduled maintenance failed", error);
     }));

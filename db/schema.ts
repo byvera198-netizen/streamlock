@@ -92,3 +92,12 @@ export const notifications = sqliteTable("notifications", {
   readAt: text("read_at"),
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
 });
+
+export const notificationPreferences = sqliteTable("notification_preferences", {
+  userId: text("user_id").primaryKey(),
+  inApp: integer("in_app", { mode: "boolean" }).notNull().default(true),
+  email: integer("email", { mode: "boolean" }).notNull().default(false),
+  whatsapp: integer("whatsapp", { mode: "boolean" }).notNull().default(false),
+  sms: integer("sms", { mode: "boolean" }).notNull().default(false),
+  updatedAt: text("updated_at").notNull().default("CURRENT_TIMESTAMP"),
+});

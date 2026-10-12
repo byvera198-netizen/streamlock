@@ -16,12 +16,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ produ
   const current = await getOwnedProduct(productId, user.userId);
   if (!current) return Response.json({ error: "Producto no encontrado." }, { status: 404 });
   if (current.product.status !== "published") return Response.json({ error: "Este producto ya no está activo." }, { status: 409 });
-  const body = await request.json() as { title?: string; price?: number; stock?: number; expiresAt?: string | null };
+  const body = await request.json() as { title?: string; description?: string; price?: number; stock?: number; expiresAt?: string | null };
   const title = body.title === undefined ? current.product.title : body.title.trim();
+  const description = body.description === undefined ? current.product.description : body.description.trim();
   const price = body.price === undefined ? current.product.priceCents / 100 : Number(body.price);
   const stock = body.stock === undefined ? current.product.stock : Number(body.stock);
-  if (title.length < 2 || !Number.isFinite(price) || price <= 0 || !Number.isInteger(stock) || stock < 0) return Response.json({ error: "Título, precio y stock deben ser válidos." }, { status: 400 });
-  const [updated] = await getDb().update(products).set({ title, priceCents: Math.round(price * 100), stock, expiresAt: body.expiresAt === undefined ? current.product.expiresAt : body.expiresAt }).where(eq(products.id, productId)).returning();
+  if (title.length < 2 || description.length > 2000 || !Number.isFinite(price) || price <= 0 || !Number.isInteger(stock) || stock < 0) return Response.json({ error: "Título, descripción, precio y stock deben ser válidos." }, { status: 400 });
+  const [updated] = await getDb().update(products).set({ title, description, priceCents: Math.round(price * 100), stock, expiresAt: body.expiresAt === undefined ? current.product.expiresAt : body.expiresAt }).where(eq(products.id, productId)).returning();
   return Response.json({ product: updated });
 }
 

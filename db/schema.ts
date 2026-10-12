@@ -26,6 +26,7 @@ export const products = sqliteTable("products", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   storeId: integer("store_id").notNull().references(() => stores.id),
   title: text("title").notNull(),
+    description: text("description").notNull().default(""),
   priceCents: integer("price_cents").notNull(),
   stock: integer("stock").notNull().default(0),
   status: text("status").notNull().default("draft"),

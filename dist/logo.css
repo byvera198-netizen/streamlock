@@ -1,0 +1,7 @@
+.brand-logo{display:block;height:48px;overflow:hidden}
+.brand-logo-window{display:block;width:172px;height:48px;overflow:hidden;position:relative}
+.brand-logo-window img{display:block;position:absolute;width:224px;height:224px;max-width:none;transform:translate(-27px,-75px)}
+
+@media (max-width:550px){
+  .brand-logo-window{width:142px}
+}

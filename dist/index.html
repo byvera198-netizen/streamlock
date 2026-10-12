@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="StreamLock: compras seguras para ventas por redes sociales y lives." />
     <title>StreamLock — Compra con tranquilidad</title>
+    <link rel="icon" type="image/jpeg" href="assets/streamlock-logo.jpg" />
+    <link rel="apple-touch-icon" href="assets/streamlock-logo.jpg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="logo.css" />
   </head>
   <body>
     <div class="app-shell">
       <header class="nav">
-        <a class="brand" href="#inicio" aria-label="Inicio StreamLock"><span class="brand-mark">S</span><span>streamlock</span></a>
+        <a class="brand brand-logo" href="#inicio" aria-label="Inicio StreamLock"><span class="brand-logo-window"><img src="assets/streamlock-logo.jpg" alt="StreamLock" /></span></a>
         <nav class="nav-links" aria-label="Navegación principal">
           <a href="#como-funciona">Cómo funciona</a>
           <a href="#vitrina">Explorar</a>
@@ -89,7 +92,7 @@
         </section>
       </main>
 
-      <footer><a class="brand"><span class="brand-mark">S</span><span>streamlock</span></a><p>Comercio social, con confianza.</p><span>© 2026 StreamLock · Demo de producto</span></footer>
+      <footer><a class="brand brand-logo" href="#inicio" aria-label="Inicio StreamLock"><span class="brand-logo-window"><img src="assets/streamlock-logo.jpg" alt="StreamLock" /></span></a><p>Comercio social, con confianza.</p><span>© 2026 StreamLock · Demo de producto</span></footer>
     </div>
 
     <dialog id="checkoutModal" class="modal"><button class="modal-close" aria-label="Cerrar">×</button><div class="modal-icon">✓</div><p class="eyebrow">CHECKOUT PROTEGIDO</p><h2 id="checkoutTitle">Producto reservado</h2><p id="checkoutText">Tu pago quedará en custodia hasta confirmar la entrega.</p><div class="checkout-total"><span>Total protegido</span><b id="checkoutPrice">$0.00</b></div><button class="primary-button modal-action">Continuar al pago seguro <span>→</span></button><small>Demo interactiva · La pasarela real se integra en la siguiente fase.</small></dialog>

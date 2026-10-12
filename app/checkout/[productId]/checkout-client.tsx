@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 type Product = { id: number; title: string; priceCents: number; stock: number; imageUrl: string | null };
@@ -23,13 +23,13 @@ export default function CheckoutClient({ product, store }: { product: Product; s
   const fee = Math.round(subtotal * 0.07);
   const productImage = product.imageUrl?.startsWith("r2://") ? `/api/products/media?key=${encodeURIComponent(product.imageUrl.slice(5))}` : product.imageUrl;
 
-  async function loadAccounts() {
+  const loadAccounts = useCallback(async () => {
     if (accounts.length) return;
     const response = await fetch("/api/payments/bank-transfer");
     if (response.ok) setAccounts((await response.json()).accounts);
-  }
+  }, [accounts.length]);
 
-  useEffect(() => { const timer = window.setTimeout(() => { void loadAccounts(); }, 0); return () => window.clearTimeout(timer); }, []);
+  useEffect(() => { const timer = window.setTimeout(() => { void loadAccounts(); }, 0); return () => window.clearTimeout(timer); }, [loadAccounts]);
 
   async function createOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setMessage("");

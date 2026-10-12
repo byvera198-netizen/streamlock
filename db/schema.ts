@@ -10,6 +10,18 @@ export const stores = sqliteTable("stores", {
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
 });
 
+export const userProfiles = sqliteTable("user_profiles", {
+  userId: text("user_id").primaryKey(),
+  legalName: text("legal_name").notNull(),
+  idNumberHash: text("id_number_hash").notNull(),
+  idLast4: text("id_last4").notNull(),
+  phone: text("phone").notNull(),
+  address: text("address").notNull(),
+  status: text("status").notNull().default("pending_review"),
+  createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
+  updatedAt: text("updated_at").notNull().default("CURRENT_TIMESTAMP"),
+});
+
 export const products = sqliteTable("products", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   storeId: integer("store_id").notNull().references(() => stores.id),
@@ -35,6 +47,9 @@ export const orders = sqliteTable("orders", {
   totalCents: integer("total_cents").notNull(),
   status: text("status").notNull().default("payment_pending"),
   deliveryMethod: text("delivery_method").notNull().default("courier"),
+  shippingName: text("shipping_name"),
+  shippingPhone: text("shipping_phone"),
+  shippingAddress: text("shipping_address"),
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
 });
 

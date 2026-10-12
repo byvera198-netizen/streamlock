@@ -12,5 +12,8 @@ export async function GET() {
     .leftJoin(deliveries, eq(orders.id, deliveries.orderId))
     .where(and(eq(stores.ownerId, seller.userId)))
     .orderBy(desc(orders.id));
-  return Response.json({ orders: rows.map((row) => ({ ...row.order, product: row.product, delivery: row.delivery })) });
+  return Response.json({ orders: rows.map((row) => {
+    const revealShipping = ["payment_held", "shipped", "ready_for_pickup", "completed"].includes(row.order.status);
+    return { ...row.order, shippingName: revealShipping ? row.order.shippingName : null, shippingPhone: revealShipping ? row.order.shippingPhone : null, shippingAddress: revealShipping ? row.order.shippingAddress : null, product: row.product, delivery: row.delivery };
+  }) });
 }

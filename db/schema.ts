@@ -118,3 +118,14 @@ export const balanceTransactions = sqliteTable("balance_transactions", {
   feeCents: integer("fee_cents").notNull().default(0),
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
 });
+
+export const withdrawals = sqliteTable("withdrawals", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ownerId: text("owner_id").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  method: text("method").notNull(),
+  destination: text("destination").notNull(),
+  status: text("status").notNull().default("pending_review"),
+  reviewedAt: text("reviewed_at"),
+  createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
+});

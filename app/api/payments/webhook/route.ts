@@ -1,6 +1,7 @@
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import { env } from "cloudflare:workers";
 import { getDb } from "../../../../db";
-import { escrowLedger, orders } from "../../../../db/schema";
+import { escrowLedger, orders, products } from "../../../../db/schema";
 
 type PaymentEvent = {
   type?: "payment.succeeded" | "payment.failed" | "payment.refunded";
@@ -9,7 +10,7 @@ type PaymentEvent = {
 };
 
 async function isValidSignature(request: Request, rawBody: string) {
-  const secret = process.env.PAYMENT_WEBHOOK_SECRET;
+  const secret = env.PAYMENT_WEBHOOK_SECRET;
   const provided = request.headers.get("x-streamlock-signature");
   if (!secret || !provided) return false;
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -31,12 +32,18 @@ export async function POST(request: Request) {
 
   if (event.type === "payment.succeeded") {
     if (order.status === "payment_held") return Response.json({ ok: true, duplicate: true });
+    if (order.status !== "payment_pending") return Response.json({ error: "La orden no acepta este evento en su estado actual." }, { status: 409 });
     await db.update(orders).set({ status: "payment_held" }).where(eq(orders.id, order.id));
     await db.update(escrowLedger).set({ status: "funds_held", heldAt: new Date().toISOString() }).where(eq(escrowLedger.orderId, order.id));
   } else if (event.type === "payment.failed") {
+    if (order.status === "payment_failed") return Response.json({ ok: true, duplicate: true });
+    if (order.status !== "payment_pending") return Response.json({ error: "La orden no acepta este evento en su estado actual." }, { status: 409 });
     await db.update(orders).set({ status: "payment_failed" }).where(eq(orders.id, order.id));
     await db.update(escrowLedger).set({ status: "payment_failed" }).where(eq(escrowLedger.orderId, order.id));
+    await db.update(products).set({ stock: sql`${products.stock} + ${order.quantity}` }).where(eq(products.id, order.productId));
   } else {
+    if (order.status === "refunded") return Response.json({ ok: true, duplicate: true });
+    if (!["payment_held", "shipped", "ready_for_pickup", "completed"].includes(order.status)) return Response.json({ error: "La orden no puede reembolsarse en su estado actual." }, { status: 409 });
     await db.update(orders).set({ status: "refunded" }).where(eq(orders.id, order.id));
     await db.update(escrowLedger).set({ status: "refunded" }).where(eq(escrowLedger.orderId, order.id));
   }

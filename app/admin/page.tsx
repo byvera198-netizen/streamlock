@@ -3,9 +3,10 @@ import AdminDisputesClient from "./disputes-client";
 import AdminWithdrawalsClient from "./withdrawals-client";
 import AdminDeliveriesClient from "./deliveries-client";
 import AdminProfilesClient from "./profiles-client";
+import AdminBankAccountsClient from "./bank-accounts-client";
 
 export const dynamic = "force-dynamic";
 
 export default function AdminPage() {
-  return <><AdminTransfersClient /><AdminProfilesClient /><AdminDisputesClient /><AdminDeliveriesClient /><AdminWithdrawalsClient /></>;
+  return <><AdminTransfersClient /><AdminBankAccountsClient /><AdminProfilesClient /><AdminDisputesClient /><AdminDeliveriesClient /><AdminWithdrawalsClient /></>;
 }

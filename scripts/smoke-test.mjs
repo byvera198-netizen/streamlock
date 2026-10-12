@@ -7,6 +7,16 @@ const checks = [
     expected: (response) => response.status === 200,
   },
   {
+    name: "perfil público",
+    request: () => fetch(`${baseUrl}/profile`),
+    expected: (response) => response.status === 200,
+  },
+  {
+    name: "panel de administración público",
+    request: () => fetch(`${baseUrl}/admin`),
+    expected: (response) => response.status === 200,
+  },
+  {
     name: "salud D1/R2",
     request: () => fetch(`${baseUrl}/api/health`),
     expected: async (response) => response.status === 200 && (await response.clone().json()).status === "ok",
@@ -20,6 +30,36 @@ const checks = [
     name: "panel bancario protegido",
     request: () => fetch(`${baseUrl}/api/admin/bank-accounts`),
     expected: (response) => response.status === 403,
+  },
+  {
+    name: "catálogo privado",
+    request: () => fetch(`${baseUrl}/api/products`),
+    expected: (response) => response.status === 401,
+  },
+  {
+    name: "negocio privado",
+    request: () => fetch(`${baseUrl}/api/stores`),
+    expected: (response) => response.status === 401,
+  },
+  {
+    name: "perfil API privado",
+    request: () => fetch(`${baseUrl}/api/profile`),
+    expected: (response) => response.status === 401,
+  },
+  {
+    name: "órdenes privadas",
+    request: () => fetch(`${baseUrl}/api/orders`),
+    expected: (response) => response.status === 401,
+  },
+  {
+    name: "balance vendedor privado",
+    request: () => fetch(`${baseUrl}/api/seller/balance`),
+    expected: (response) => response.status === 401,
+  },
+  {
+    name: "edición de producto protegida",
+    request: () => fetch(`${baseUrl}/api/products/1`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "Prueba" }) }),
+    expected: (response) => response.status === 401,
   },
   {
     name: "registro de comprobante protegido",

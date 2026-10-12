@@ -16,13 +16,22 @@ export async function PATCH(request: Request, context: { params: Promise<{ produ
   const current = await getOwnedProduct(productId, user.userId);
   if (!current) return Response.json({ error: "Producto no encontrado." }, { status: 404 });
   if (current.product.status !== "published") return Response.json({ error: "Este producto ya no está activo." }, { status: 409 });
-  const body = await request.json() as { title?: string; description?: string; price?: number; stock?: number; expiresAt?: string | null };
+  const body = await request.json() as { title?: string; description?: string; price?: number; stock?: number; saleMode?: "store" | "live"; expiresAt?: string | null };
   const title = body.title === undefined ? current.product.title : body.title.trim();
   const description = body.description === undefined ? current.product.description : body.description.trim();
   const price = body.price === undefined ? current.product.priceCents / 100 : Number(body.price);
   const stock = body.stock === undefined ? current.product.stock : Number(body.stock);
   if (title.length < 2 || description.length > 2000 || !Number.isFinite(price) || price <= 0 || !Number.isInteger(stock) || stock < 0) return Response.json({ error: "Título, descripción, precio y stock deben ser válidos." }, { status: 400 });
-  const [updated] = await getDb().update(products).set({ title, description, priceCents: Math.round(price * 100), stock, expiresAt: body.expiresAt === undefined ? current.product.expiresAt : body.expiresAt }).where(eq(products.id, productId)).returning();
+  if (body.saleMode !== undefined && body.saleMode !== "store" && body.saleMode !== "live") return Response.json({ error: "El modo de venta no es válido." }, { status: 400 });
+  const saleMode = body.saleMode ?? current.product.saleMode;
+  let expiresAt: string | null = null;
+  if (saleMode === "live") {
+    const requestedExpiry = body.expiresAt === undefined ? current.product.expiresAt : body.expiresAt;
+    const expiryTimestamp = requestedExpiry ? Date.parse(requestedExpiry) : Date.now() + 24 * 60 * 60 * 1000;
+    if (!Number.isFinite(expiryTimestamp) || expiryTimestamp <= Date.now()) return Response.json({ error: "La publicación Live debe tener una fecha futura válida." }, { status: 400 });
+    expiresAt = new Date(expiryTimestamp).toISOString();
+  }
+  const [updated] = await getDb().update(products).set({ title, description, priceCents: Math.round(price * 100), stock, saleMode, expiresAt }).where(eq(products.id, productId)).returning();
   return Response.json({ product: updated });
 }
 

@@ -81,3 +81,14 @@ export const disputes = sqliteTable("disputes", {
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
   resolvedAt: text("resolved_at"),
 });
+
+export const notifications = sqliteTable("notifications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  orderId: integer("order_id").references(() => orders.id),
+  readAt: text("read_at"),
+  createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
+});

@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import { disputes, escrowLedger, orders } from "../../../../../db/schema";
+import { createNotification } from "../../../../../db/notifications";
 import { getChatGPTUser } from "../../../../../app/chatgpt-auth";
 
 const allowedReasons = ["not_received", "damaged", "not_as_described", "other"];
@@ -20,5 +21,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
   const [dispute] = await db.insert(disputes).values({ orderId, openedBy: buyer.userId, reason: body.reason!, description: body.description.trim().slice(0, 2000), status: "open" }).returning();
   await db.update(orders).set({ status: "disputed" }).where(eq(orders.id, orderId));
   await db.update(escrowLedger).set({ status: "disputed" }).where(eq(escrowLedger.orderId, orderId));
+  await createNotification(db, { userId: buyer.userId, type: "dispute_opened", title: "Disputa abierta", message: `Tu reclamo del pedido #${orderId} está en revisión.`, orderId });
   return Response.json({ dispute, orderStatus: "disputed" }, { status: 201 });
 }

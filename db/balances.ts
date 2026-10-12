@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { balanceTransactions, escrowLedger, sellerBalances } from "./schema";
 
 export async function creditSellerBalance(db: any, ownerId: string, orderId: number, amountCents: number, feeCents: number) {
@@ -7,11 +7,14 @@ export async function creditSellerBalance(db: any, ownerId: string, orderId: num
   const [alreadyCredited] = await db.select({ id: balanceTransactions.id }).from(balanceTransactions)
     .where(and(eq(balanceTransactions.ownerId, ownerId), eq(balanceTransactions.orderId, orderId), eq(balanceTransactions.type, "sale_released"))).limit(1);
   if (alreadyCredited) return;
-  const [current] = await db.select().from(sellerBalances).where(eq(sellerBalances.ownerId, ownerId)).limit(1);
-  if (current) {
-    await db.update(sellerBalances).set({ availableCents: current.availableCents + amountCents, totalEarnedCents: current.totalEarnedCents + amountCents, updatedAt: new Date().toISOString() }).where(eq(sellerBalances.ownerId, ownerId));
-  } else {
-    await db.insert(sellerBalances).values({ ownerId, availableCents: amountCents, totalEarnedCents: amountCents, updatedAt: new Date().toISOString() });
-  }
+  const now = new Date().toISOString();
+  await db.insert(sellerBalances).values({ ownerId, availableCents: amountCents, totalEarnedCents: amountCents, updatedAt: now }).onConflictDoUpdate({
+    target: sellerBalances.ownerId,
+    set: {
+      availableCents: sql`${sellerBalances.availableCents} + ${amountCents}`,
+      totalEarnedCents: sql`${sellerBalances.totalEarnedCents} + ${amountCents}`,
+      updatedAt: now,
+    },
+  });
   await db.insert(balanceTransactions).values({ ownerId, orderId, type: "sale_released", amountCents, feeCents });
 }

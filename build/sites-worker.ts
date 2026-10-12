@@ -1,6 +1,7 @@
 import handler from "vinext/server/fetch-handler";
 import { runWithConnectorBinding } from "../lib/connector-context";
 import type { ConnectorBinding } from "../lib/connector-contract.mjs";
+import { cleanupExpiredLiveSales } from "../db/live-sales-cleanup";
 
 export default {
   fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext<{ CONNECTORS?: ConnectorBinding }>) {
@@ -24,5 +25,12 @@ export default {
       };
     }
     return runWithConnectorBinding(binding, () => handler.fetch(request, env, ctx));
+  },
+  scheduled(controller: ScheduledController, env: Cloudflare.Env, ctx: ExecutionContext) {
+    ctx.waitUntil(
+      cleanupExpiredLiveSales({ DB: env.DB, RECEIPTS: env.RECEIPTS }).catch((error) => {
+        console.error("[streamlock] Live sales cleanup failed", error);
+      }),
+    );
   },
 };

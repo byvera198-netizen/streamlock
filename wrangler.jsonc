@@ -4,6 +4,7 @@
   "main": "dist/server/index.js",
   "compatibility_date": "2026-10-11",
   "compatibility_flags": ["nodejs_compat"],
+  "triggers": { "crons": ["0 * * * *"] },
   "assets": { "directory": "dist/client" },
   "r2_buckets": [{ "binding": "RECEIPTS", "bucket_name": "streamlock-receipts" }],
   "d1_databases": [

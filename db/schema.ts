@@ -53,6 +53,8 @@ export const deliveries = sqliteTable("deliveries", {
   carrier: text("carrier"),
   trackingCode: text("tracking_code"),
   status: text("status").notNull().default("pending"),
+  pickupPin: text("pickup_pin"),
+  pickupPinExpiresAt: text("pickup_pin_expires_at"),
   receivedAt: text("received_at"),
 });
 

@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import { deliveries, orders, stores } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../../app/chatgpt-auth";
+import { createNotification } from "../../../../../db/notifications";
 
 export async function POST(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
   const seller = await getChatGPTUser();
@@ -19,10 +20,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     const [delivery] = await db.insert(deliveries).values({ orderId, method: "pickup", status: "ready", pickupPin, pickupPinExpiresAt: expires }).returning();
     await db.update(orders).set({ status: "ready_for_pickup" }).where(eq(orders.id, orderId));
+    await createNotification(db, { userId: row.order.buyerId, type: "pickup_ready", title: "Entrega presencial preparada", message: `Tu pedido #${orderId} está listo. Consulta tu PIN en Mis compras.`, orderId });
+    await createNotification(db, { userId: seller.userId, type: "pickup_ready", title: "PIN de entrega generado", message: `El pedido #${orderId} está listo para entrega presencial.`, orderId });
     return Response.json({ delivery: { ...delivery, pickupPin: undefined }, orderStatus: "ready_for_pickup", message: "Entrega presencial preparada. El PIN se muestra únicamente al comprador." }, { status: 201 });
   }
   if (!body.carrier?.trim() || !body.trackingCode?.trim()) return Response.json({ error: "Empresa de courier y guía son obligatorias." }, { status: 400 });
   const [delivery] = await db.insert(deliveries).values({ orderId, method: "courier", carrier: body.carrier.trim().slice(0, 100), trackingCode: body.trackingCode.trim().slice(0, 120), status: "in_transit" }).returning();
   await db.update(orders).set({ status: "shipped" }).where(eq(orders.id, orderId));
+  await createNotification(db, { userId: row.order.buyerId, type: "order_shipped", title: "Pedido despachado", message: `Tu pedido #${orderId} fue entregado al courier ${body.carrier.trim()} con guía ${body.trackingCode.trim()}.`, orderId });
+  await createNotification(db, { userId: seller.userId, type: "order_shipped", title: "Despacho registrado", message: `El pedido #${orderId} quedó marcado como enviado.`, orderId });
   return Response.json({ delivery, orderStatus: "shipped" }, { status: 201 });
 }

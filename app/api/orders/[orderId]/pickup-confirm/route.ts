@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import { deliveries, disputes, escrowLedger, orders, stores } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../../app/chatgpt-auth";
+import { createNotification } from "../../../../../db/notifications";
 
 export async function POST(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
   const seller = await getChatGPTUser();
@@ -24,5 +25,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
   await db.update(deliveries).set({ status: "delivered", receivedAt }).where(eq(deliveries.orderId, orderId));
   await db.update(orders).set({ status: "completed" }).where(eq(orders.id, orderId));
   await db.update(escrowLedger).set({ status: "released", releasedAt: receivedAt }).where(eq(escrowLedger.orderId, orderId));
+  await createNotification(db, { userId: row.order.buyerId, type: "order_completed", title: "Entrega presencial confirmada", message: `La entrega del pedido #${orderId} fue validada correctamente.`, orderId });
+  await createNotification(db, { userId: seller.userId, type: "funds_released", title: "Fondos liberados", message: `Los fondos del pedido #${orderId} fueron liberados a tu balance.`, orderId });
   return Response.json({ ok: true, orderId, orderStatus: "completed", releasedAt: receivedAt });
 }

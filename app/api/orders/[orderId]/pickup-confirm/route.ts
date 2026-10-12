@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../db";
-import { deliveries, escrowLedger, orders, stores } from "../../../../../db/schema";
+import { deliveries, disputes, escrowLedger, orders, stores } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../../app/chatgpt-auth";
 
 export async function POST(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
@@ -14,6 +14,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
     .innerJoin(stores, eq(orders.storeId, stores.id)).innerJoin(deliveries, eq(deliveries.orderId, orders.id))
     .where(and(eq(orders.id, orderId), eq(stores.ownerId, seller.userId), eq(deliveries.method, "pickup"))).limit(1);
   if (!row) return Response.json({ error: "Orden de entrega presencial no encontrada." }, { status: 404 });
+  const [activeDispute] = await db.select().from(disputes).where(and(eq(disputes.orderId, orderId), eq(disputes.status, "open"))).limit(1);
+  if (activeDispute) return Response.json({ error: "Esta orden está en disputa y requiere revisión." }, { status: 409 });
   if (row.order.status === "completed") return Response.json({ ok: true, duplicate: true, orderStatus: "completed" });
   if (row.order.status !== "ready_for_pickup") return Response.json({ error: "La orden no está lista para entrega presencial." }, { status: 409 });
   if (row.delivery.pickupPinExpiresAt && Date.parse(row.delivery.pickupPinExpiresAt) < Date.now()) return Response.json({ error: "El PIN ha expirado." }, { status: 410 });

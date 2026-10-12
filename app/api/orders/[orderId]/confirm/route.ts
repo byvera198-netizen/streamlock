@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../../db";
-import { deliveries, escrowLedger, orders } from "../../../../../db/schema";
+import { deliveries, disputes, escrowLedger, orders } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../../app/chatgpt-auth";
 
 export async function POST(_request: Request, { params }: { params: Promise<{ orderId: string }> }) {
@@ -11,6 +11,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
   const db = getDb();
   const [order] = await db.select().from(orders).where(and(eq(orders.id, orderId), eq(orders.buyerId, buyer.userId))).limit(1);
   if (!order) return Response.json({ error: "Orden no encontrada." }, { status: 404 });
+  const [activeDispute] = await db.select().from(disputes).where(and(eq(disputes.orderId, orderId), eq(disputes.status, "open"))).limit(1);
+  if (activeDispute) return Response.json({ error: "Esta orden está en disputa y no puede cerrarse hasta la revisión." }, { status: 409 });
   if (order.status === "completed") return Response.json({ ok: true, duplicate: true, orderStatus: "completed" });
   if (order.status !== "shipped") return Response.json({ error: "La orden todavía no está marcada como despachada." }, { status: 409 });
   const releasedAt = new Date().toISOString();

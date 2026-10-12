@@ -69,3 +69,15 @@ export const bankTransferSubmissions = sqliteTable("bank_transfer_submissions", 
   submittedAt: text("submitted_at").notNull().default("CURRENT_TIMESTAMP"),
   reviewedAt: text("reviewed_at"),
 });
+
+export const disputes = sqliteTable("disputes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  orderId: integer("order_id").notNull().unique().references(() => orders.id),
+  openedBy: text("opened_by").notNull(),
+  reason: text("reason").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default("open"),
+  resolution: text("resolution"),
+  createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
+  resolvedAt: text("resolved_at"),
+});

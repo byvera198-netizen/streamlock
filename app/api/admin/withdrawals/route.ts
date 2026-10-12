@@ -1,11 +1,12 @@
 import { and, desc, eq, sql } from "drizzle-orm";
+import { env } from "cloudflare:workers";
 import { getDb } from "../../../../db";
 import { balanceTransactions, sellerBalances, withdrawals } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 
 async function requireAdmin() {
   const user = await getChatGPTUser();
-  const email = process.env.STREAMLOCK_ADMIN_EMAIL?.trim().toLowerCase();
+  const email = env.STREAMLOCK_ADMIN_EMAIL?.trim().toLowerCase();
   if (!email) return { response: Response.json({ error: "El administrador aún no está configurado." }, { status: 503 }) };
   if (!user || user.email.toLowerCase() !== email) return { response: Response.json({ error: "No autorizado." }, { status: 403 }) };
   return { user };

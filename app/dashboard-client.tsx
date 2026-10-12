@@ -56,12 +56,12 @@ export default function DashboardClient() {
   async function createStore(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true); setMessage("");
-    const response = await fetch("/api/stores", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, socialNetwork: network }) });
+    const response = await fetch("/api/stores", { method: store ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, socialNetwork: network }) });
     const payload = await response.json();
     setLoading(false);
     if (!response.ok) { setMessage(payload.error ?? "No se pudo crear el negocio."); return; }
     setStore(payload.store); setName(payload.store.name); setNetwork(payload.store.socialNetwork);
-    setMessage(payload.existing ? "Tu negocio ya estaba configurado y quedó cargado." : "Tu negocio fue creado. El siguiente paso es completar la verificación.");
+    setMessage(payload.existing ? "Tu negocio ya estaba configurado y quedó cargado." : store ? "Los datos de tu vitrina fueron actualizados." : "Tu negocio fue creado. El siguiente paso es completar la verificación.");
     void loadCatalog(); void loadOrders();
   }
 

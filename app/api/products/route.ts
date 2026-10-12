@@ -1,0 +1,29 @@
+import { and, desc, eq } from "drizzle-orm";
+import { getChatGPTUser } from "../../chatgpt-auth";
+import { getDb } from "../../../db";
+import { products, stores } from "../../../db/schema";
+
+export async function GET() {
+  const user = await getChatGPTUser();
+  if (!user) return Response.json({ error: "Inicia sesión para ver tus productos." }, { status: 401 });
+  const rows = await getDb().select({ product: products, store: stores }).from(products)
+    .innerJoin(stores, eq(products.storeId, stores.id)).where(eq(stores.ownerId, user.userId))
+    .orderBy(desc(products.id));
+  return Response.json({ products: rows.map((row) => row.product) });
+}
+
+export async function POST(request: Request) {
+  const user = await getChatGPTUser();
+  if (!user) return Response.json({ error: "Inicia sesión para publicar productos." }, { status: 401 });
+  const body = await request.json() as { storeId?: number; title?: string; price?: number; stock?: number; imageUrl?: string };
+  const title = body.title?.trim() ?? "";
+  const price = Number(body.price);
+  const stock = Number(body.stock);
+  if (!body.storeId || title.length < 2 || !Number.isFinite(price) || price <= 0 || !Number.isInteger(stock) || stock < 0) {
+    return Response.json({ error: "Completa título, precio y stock con valores válidos." }, { status: 400 });
+  }
+  const owned = await getDb().select({ id: stores.id }).from(stores).where(and(eq(stores.id, body.storeId), eq(stores.ownerId, user.userId))).limit(1);
+  if (!owned.length) return Response.json({ error: "El negocio no pertenece a esta cuenta." }, { status: 403 });
+  const [product] = await getDb().insert(products).values({ storeId: body.storeId, title, priceCents: Math.round(price * 100), stock, status: "published", imageUrl: body.imageUrl?.trim() || null }).returning();
+  return Response.json({ product }, { status: 201 });
+}

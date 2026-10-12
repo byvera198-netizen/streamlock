@@ -2,6 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { getDb } from "../../../../db";
 import { balanceTransactions, sellerBalances, withdrawals } from "../../../../db/schema";
+import { createNotification } from "../../../../db/notifications";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 
 async function requireAdmin() {
@@ -37,5 +38,11 @@ export async function POST(request: Request) {
   } else {
     await db.insert(balanceTransactions).values({ ownerId: item.ownerId, type: "withdrawal_paid", amountCents: 0, feeCents: 0 });
   }
+  await createNotification(db, {
+    userId: item.ownerId,
+    type: body.decision === "approve" ? "withdrawal_paid" : "withdrawal_rejected",
+    title: body.decision === "approve" ? "Retiro pagado" : "Retiro rechazado",
+    message: body.decision === "approve" ? `Tu retiro de $${(item.amountCents / 100).toFixed(2)} fue marcado como pagado.` : `Tu retiro de $${(item.amountCents / 100).toFixed(2)} fue rechazado y el saldo fue devuelto.`,
+  });
   return Response.json({ ok: true, status: body.decision === "approve" ? "paid" : "rejected" });
 }

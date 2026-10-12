@@ -2,6 +2,7 @@ import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { balanceTransactions, sellerBalances, withdrawals } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
+import { sendSupportEmail } from "../../../email";
 
 export async function GET() {
   const seller = await getChatGPTUser();
@@ -21,5 +22,6 @@ export async function POST(request: Request) {
   if (!updated) return Response.json({ error: "Saldo insuficiente o balance no disponible." }, { status: 409 });
   const [item] = await db.insert(withdrawals).values({ ownerId: seller.userId, amountCents, method: body.method.trim().slice(0, 40), destination: body.destination.trim().slice(0, 180) }).returning();
   await db.insert(balanceTransactions).values({ ownerId: seller.userId, type: "withdrawal_requested", amountCents: -amountCents, feeCents: 0 });
+  await sendSupportEmail(`StreamLock · Nuevo retiro #${item.id}`, `<p>Se solicitó un retiro de <strong>$${(amountCents / 100).toFixed(2)}</strong>.</p><p>Solicitud #${item.id} pendiente de revisión administrativa.</p>`, `withdrawal-request/${item.id}`);
   return Response.json({ withdrawal: item, message: "Solicitud enviada para revisión administrativa." }, { status: 201 });
 }

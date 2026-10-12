@@ -18,6 +18,8 @@ export const products = sqliteTable("products", {
   stock: integer("stock").notNull().default(0),
   status: text("status").notNull().default("draft"),
   imageUrl: text("image_url"),
+  saleMode: text("sale_mode").notNull().default("store"),
+  expiresAt: text("expires_at"),
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
 });
 

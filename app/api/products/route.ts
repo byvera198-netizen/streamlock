@@ -15,7 +15,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "Inicia sesión para publicar productos." }, { status: 401 });
-  const body = await request.json() as { storeId?: number; title?: string; price?: number; stock?: number; imageUrl?: string };
+  const body = await request.json() as { storeId?: number; title?: string; price?: number; stock?: number; imageUrl?: string; saleMode?: "store" | "live"; expiresAt?: string };
   const title = body.title?.trim() ?? "";
   const price = Number(body.price);
   const stock = Number(body.stock);
@@ -24,6 +24,9 @@ export async function POST(request: Request) {
   }
   const owned = await getDb().select({ id: stores.id }).from(stores).where(and(eq(stores.id, body.storeId), eq(stores.ownerId, user.userId))).limit(1);
   if (!owned.length) return Response.json({ error: "El negocio no pertenece a esta cuenta." }, { status: 403 });
-  const [product] = await getDb().insert(products).values({ storeId: body.storeId, title, priceCents: Math.round(price * 100), stock, status: "published", imageUrl: body.imageUrl?.trim() || null }).returning();
+  const saleMode = body.saleMode === "live" ? "live" : "store";
+  const expiresAt = saleMode === "live" ? (body.expiresAt ? new Date(body.expiresAt).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()) : null;
+  if (saleMode === "live" && (!expiresAt || Date.parse(expiresAt) <= Date.now())) return Response.json({ error: "La publicación Live debe tener una fecha futura." }, { status: 400 });
+  const [product] = await getDb().insert(products).values({ storeId: body.storeId, title, priceCents: Math.round(price * 100), stock, status: "published", imageUrl: body.imageUrl?.trim() || null, saleMode, expiresAt }).returning();
   return Response.json({ product }, { status: 201 });
 }

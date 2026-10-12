@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, or, isNull, gt } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { getDb } from "../../../db";
 import { products, stores } from "../../../db/schema";
@@ -12,7 +12,7 @@ export default async function Storefront({ params }: { params: Promise<{ slug: s
   const [store] = await getDb().select().from(stores).where(eq(stores.slug, slug)).limit(1);
   if (!store) notFound();
   const catalog = await getDb().select().from(products)
-    .where(and(eq(products.storeId, store.id), eq(products.status, "published")))
+    .where(and(eq(products.storeId, store.id), eq(products.status, "published"), or(eq(products.saleMode, "store"), and(eq(products.saleMode, "live"), or(isNull(products.expiresAt), gt(products.expiresAt, new Date().toISOString()))))))
     .orderBy(products.id);
 
   return <main className="storefront-shell">

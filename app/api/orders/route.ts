@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte, gt, isNull, or, sql } from "drizzle-orm";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { getDb } from "../../../db";
 import { deliveries, escrowLedger, orders, products, stores, userProfiles } from "../../../db/schema";
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
   const [item] = await getDb().select({ product: products, store: stores }).from(products)
     .innerJoin(stores, eq(products.storeId, stores.id))
-    .where(and(eq(products.id, productId), eq(products.status, "published"))).limit(1);
+    .where(and(eq(products.id, productId), eq(products.status, "published"), or(eq(products.saleMode, "store"), and(eq(products.saleMode, "live"), or(isNull(products.expiresAt), gt(products.expiresAt, new Date().toISOString())))))).limit(1);
   if (!item) return Response.json({ error: "El producto no está disponible." }, { status: 404 });
   if (item.product.stock < quantity) return Response.json({ error: "No hay suficiente stock disponible." }, { status: 409 });
 
@@ -32,9 +32,16 @@ export async function POST(request: Request) {
     const message = profile.status === "rejected" ? "Tu perfil fue rechazado. Actualiza tus datos para solicitar una nueva revisión." : "Tu perfil está pendiente de revisión administrativa. Podrás comprar cuando sea aprobado.";
     return Response.json({ error: message, code: "PROFILE_NOT_APPROVED", status: profile.status }, { status: 409 });
   }
-  const [order] = await db.insert(orders).values({ buyerId: buyer.userId, storeId: item.store.id, productId, quantity, unitPriceCents: item.product.priceCents, subtotalCents, feeCents, totalCents, deliveryMethod, shippingName: profile.legalName, shippingPhone: profile.phone, shippingAddress: profile.address, status: "payment_pending" }).returning();
-  const [escrow] = await db.insert(escrowLedger).values({ orderId: order.id, amountCents: subtotalCents, feeCents, status: "awaiting_payment" }).returning();
-  return Response.json({ order, escrow, next: "payment_provider_required" }, { status: 201 });
+  const [reserved] = await db.update(products).set({ stock: sql`${products.stock} - ${quantity}` }).where(and(eq(products.id, productId), gte(products.stock, quantity))).returning({ id: products.id });
+  if (!reserved) return Response.json({ error: "El stock cambió mientras procesábamos tu pedido. Intenta nuevamente." }, { status: 409 });
+  try {
+    const [order] = await db.insert(orders).values({ buyerId: buyer.userId, storeId: item.store.id, productId, quantity, unitPriceCents: item.product.priceCents, subtotalCents, feeCents, totalCents, deliveryMethod, shippingName: profile.legalName, shippingPhone: profile.phone, shippingAddress: profile.address, status: "payment_pending" }).returning();
+    const [escrow] = await db.insert(escrowLedger).values({ orderId: order.id, amountCents: subtotalCents, feeCents, status: "awaiting_payment" }).returning();
+    return Response.json({ order, escrow, next: "payment_provider_required" }, { status: 201 });
+  } catch {
+    await db.update(products).set({ stock: sql`${products.stock} + ${quantity}` }).where(eq(products.id, productId));
+    return Response.json({ error: "No pudimos reservar el pedido. Intenta nuevamente." }, { status: 500 });
+  }
 }
 
 export async function GET() {

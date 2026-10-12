@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { getDb } from "../../../db";
-import { escrowLedger, orders, products, stores } from "../../../db/schema";
+import { deliveries, escrowLedger, orders, products, stores } from "../../../db/schema";
 
 const SERVICE_FEE_RATE = 0.07;
 
@@ -34,6 +34,8 @@ export async function POST(request: Request) {
 export async function GET() {
   const buyer = await getChatGPTUser();
   if (!buyer) return Response.json({ error: "Inicia sesión para ver tus órdenes." }, { status: 401 });
-  const rows = await getDb().select().from(orders).where(eq(orders.buyerId, buyer.userId));
-  return Response.json({ orders: rows });
+  const rows = await getDb().select({ order: orders, product: products, store: stores, delivery: deliveries })
+    .from(orders).innerJoin(products, eq(orders.productId, products.id)).innerJoin(stores, eq(orders.storeId, stores.id))
+    .leftJoin(deliveries, eq(orders.id, deliveries.orderId)).where(eq(orders.buyerId, buyer.userId));
+  return Response.json({ orders: rows.map((row) => ({ ...row.order, product: row.product, store: row.store, delivery: row.delivery })) });
 }

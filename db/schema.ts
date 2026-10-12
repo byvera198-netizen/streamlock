@@ -55,3 +55,15 @@ export const deliveries = sqliteTable("deliveries", {
   status: text("status").notNull().default("pending"),
   receivedAt: text("received_at"),
 });
+
+export const bankTransferSubmissions = sqliteTable("bank_transfer_submissions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  orderId: integer("order_id").notNull().unique().references(() => orders.id),
+  bank: text("bank").notNull(),
+  reference: text("reference").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  receiptUrl: text("receipt_url"),
+  status: text("status").notNull().default("pending_review"),
+  submittedAt: text("submitted_at").notNull().default("CURRENT_TIMESTAMP"),
+  reviewedAt: text("reviewed_at"),
+});

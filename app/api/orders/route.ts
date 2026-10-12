@@ -28,6 +28,10 @@ export async function POST(request: Request) {
   const db = getDb();
   const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, buyer.userId)).limit(1);
   if (!profile) return Response.json({ error: "Completa tu perfil de identidad y despacho antes de comprar.", code: "PROFILE_REQUIRED" }, { status: 409 });
+  if (profile.status !== "approved") {
+    const message = profile.status === "rejected" ? "Tu perfil fue rechazado. Actualiza tus datos para solicitar una nueva revisión." : "Tu perfil está pendiente de revisión administrativa. Podrás comprar cuando sea aprobado.";
+    return Response.json({ error: message, code: "PROFILE_NOT_APPROVED", status: profile.status }, { status: 409 });
+  }
   const [order] = await db.insert(orders).values({ buyerId: buyer.userId, storeId: item.store.id, productId, quantity, unitPriceCents: item.product.priceCents, subtotalCents, feeCents, totalCents, deliveryMethod, shippingName: profile.legalName, shippingPhone: profile.phone, shippingAddress: profile.address, status: "payment_pending" }).returning();
   const [escrow] = await db.insert(escrowLedger).values({ orderId: order.id, amountCents: subtotalCents, feeCents, status: "awaiting_payment" }).returning();
   return Response.json({ order, escrow, next: "payment_provider_required" }, { status: 201 });

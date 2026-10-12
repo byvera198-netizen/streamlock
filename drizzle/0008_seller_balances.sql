@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS seller_balances (
+  owner_id TEXT PRIMARY KEY,
+  available_cents INTEGER NOT NULL DEFAULT 0,
+  total_earned_cents INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS balance_transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id TEXT NOT NULL,
+  order_id INTEGER REFERENCES orders(id),
+  type TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  fee_cents INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

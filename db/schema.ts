@@ -101,3 +101,20 @@ export const notificationPreferences = sqliteTable("notification_preferences", {
   sms: integer("sms", { mode: "boolean" }).notNull().default(false),
   updatedAt: text("updated_at").notNull().default("CURRENT_TIMESTAMP"),
 });
+
+export const sellerBalances = sqliteTable("seller_balances", {
+  ownerId: text("owner_id").primaryKey(),
+  availableCents: integer("available_cents").notNull().default(0),
+  totalEarnedCents: integer("total_earned_cents").notNull().default(0),
+  updatedAt: text("updated_at").notNull().default("CURRENT_TIMESTAMP"),
+});
+
+export const balanceTransactions = sqliteTable("balance_transactions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ownerId: text("owner_id").notNull(),
+  orderId: integer("order_id").references(() => orders.id),
+  type: text("type").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  feeCents: integer("fee_cents").notNull().default(0),
+  createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
+});

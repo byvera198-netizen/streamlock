@@ -30,6 +30,8 @@ export async function POST(request: Request) {
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
   if (!order || order.buyerId !== buyer.userId) return Response.json({ error: "Orden no encontrada." }, { status: 404 });
   if (order.status !== "payment_pending") return Response.json({ error: "Esta orden ya no acepta comprobantes." }, { status: 409 });
+  const [existing] = await db.select({ id: bankTransferSubmissions.id, status: bankTransferSubmissions.status }).from(bankTransferSubmissions).where(eq(bankTransferSubmissions.orderId, orderId)).limit(1);
+  if (existing) return Response.json({ error: "Esta orden ya tiene un comprobante registrado.", submissionId: existing.id, status: existing.status }, { status: 409 });
 
   let receiptUrl: string | null = null;
   if (receipt) {

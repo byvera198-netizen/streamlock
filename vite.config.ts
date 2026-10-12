@@ -17,15 +17,10 @@ const managedLinux = readExecutionProfile() === "managed-linux";
 const localBindingConfig = {
   main: "./build/sites-worker.ts",
   compatibility_flags: ["nodejs_compat"],
-  d1_databases: d1
-    ? [
-        {
-          binding: d1,
-          database_name: "site-creator-d1",
-          database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
-        },
-      ]
-    : [],
+  // The production Worker receives its real D1 binding from wrangler.jsonc.
+  // Do not inject the starter placeholder here: Vinext merges this config into
+  // the generated Worker config and Wrangler rejects duplicate DB bindings.
+  d1_databases: [],
   r2_buckets: r2
     ? [
         {

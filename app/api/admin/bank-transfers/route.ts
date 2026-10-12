@@ -3,6 +3,7 @@ import { getDb } from "../../../../db";
 import { bankTransferSubmissions, escrowLedger, orders, products, stores } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { createNotification } from "../../../../db/notifications";
+import { sendSupportEmail } from "../../../email";
 
 async function requireAdmin() {
   const user = await getChatGPTUser();
@@ -38,5 +39,6 @@ export async function POST(request: Request) {
   await db.update(escrowLedger).set({ status: approved ? "funds_held" : "payment_failed", ...(approved ? { heldAt: new Date().toISOString() } : {}) }).where(eq(escrowLedger.orderId, row.order.id));
   await createNotification(db, { userId: row.order.buyerId, type: approved ? "payment_approved" : "payment_rejected", title: approved ? "Pago protegido" : "Pago rechazado", message: approved ? `Tu pago del pedido #${row.order.id} fue verificado y quedó protegido.` : `No pudimos validar el comprobante del pedido #${row.order.id}.`, orderId: row.order.id });
   if (approved) await createNotification(db, { userId: row.store.ownerId, type: "payment_approved", title: "Pago garantizado", message: `El pago del pedido #${row.order.id} fue verificado. Ya puedes preparar el despacho.`, orderId: row.order.id });
+  await sendSupportEmail(`StreamLock · Transferencia ${approved ? "aprobada" : "rechazada"} · Pedido #${row.order.id}`, `<p>La transferencia del pedido <strong>#${row.order.id}</strong> fue ${approved ? "aprobada y retenida en custodia" : "rechazada"}.</p>`, `bank-transfer-review/${submissionId}/${approved ? "approved" : "rejected"}`);
   return Response.json({ ok: true, orderId: row.order.id, status: approved ? "payment_held" : "payment_failed" });
 }

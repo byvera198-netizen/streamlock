@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { disputes, escrowLedger, orders, products, stores } from "../../../../db/schema";
 import { createNotification } from "../../../../db/notifications";
+import { sendSupportEmail } from "../../../email";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 
 async function requireAdmin() {
@@ -37,5 +38,6 @@ export async function POST(request: Request) {
   await db.update(escrowLedger).set({ status: refund ? "refunded" : "released", releasedAt: refund ? undefined : now }).where(eq(escrowLedger.orderId, row.order.id));
   await createNotification(db, { userId: row.order.buyerId, type: "dispute_resolved", title: "Disputa resuelta", message: `La disputa del pedido #${row.order.id} fue resuelta: ${refund ? "se aprobó un reembolso" : "se cerró a favor del vendedor"}.`, orderId: row.order.id });
   await createNotification(db, { userId: row.store.ownerId, type: "dispute_resolved", title: "Disputa de pedido resuelta", message: `La disputa del pedido #${row.order.id} fue resuelta por el administrador.`, orderId: row.order.id });
+  await sendSupportEmail(`StreamLock · Disputa resuelta · Pedido #${row.order.id}`, `<p>La disputa del pedido <strong>#${row.order.id}</strong> fue resuelta con decisión <strong>${body.decision}</strong>.</p>`, `dispute-resolution/${disputeId}/${body.decision}`);
   return Response.json({ ok: true, orderId: row.order.id, status: refund ? "refunded" : "completed" });
 }

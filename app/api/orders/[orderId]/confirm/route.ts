@@ -18,7 +18,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
   if (order.order.status === "completed") return Response.json({ ok: true, duplicate: true, orderStatus: "completed" });
   if (order.order.status !== "shipped") return Response.json({ error: "La orden todavía no está marcada como despachada." }, { status: 409 });
   const releasedAt = new Date().toISOString();
-  await db.update(deliveries).set({ status: "delivered", receivedAt: releasedAt }).where(eq(deliveries.orderId, orderId));
+  await db.update(deliveries).set({ status: "delivered", deliveredAt: releasedAt, receivedAt: releasedAt }).where(eq(deliveries.orderId, orderId));
   await db.update(orders).set({ status: "completed" }).where(eq(orders.id, orderId));
   await db.update(escrowLedger).set({ status: "released", releasedAt }).where(eq(escrowLedger.orderId, orderId));
   await creditSellerBalance(db, order.store.ownerId, orderId, order.order.subtotalCents, order.order.feeCents);

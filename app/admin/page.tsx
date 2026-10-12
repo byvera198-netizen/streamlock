@@ -1,9 +1,10 @@
 import AdminTransfersClient from "./transfers-client";
 import AdminDisputesClient from "./disputes-client";
 import AdminWithdrawalsClient from "./withdrawals-client";
+import AdminDeliveriesClient from "./deliveries-client";
 
 export const dynamic = "force-dynamic";
 
 export default function AdminPage() {
-  return <><AdminTransfersClient /><AdminDisputesClient /><AdminWithdrawalsClient /></>;
+  return <><AdminTransfersClient /><AdminDisputesClient /><AdminDeliveriesClient /><AdminWithdrawalsClient /></>;
 }

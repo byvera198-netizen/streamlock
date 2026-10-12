@@ -57,6 +57,7 @@ export const deliveries = sqliteTable("deliveries", {
   status: text("status").notNull().default("pending"),
   pickupPin: text("pickup_pin"),
   pickupPinExpiresAt: text("pickup_pin_expires_at"),
+  deliveredAt: text("delivered_at"),
   receivedAt: text("received_at"),
 });
 

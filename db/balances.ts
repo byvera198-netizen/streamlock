@@ -4,6 +4,9 @@ import { balanceTransactions, escrowLedger, sellerBalances } from "./schema";
 export async function creditSellerBalance(db: any, ownerId: string, orderId: number, amountCents: number, feeCents: number) {
   const [escrow] = await db.select().from(escrowLedger).where(and(eq(escrowLedger.orderId, orderId), eq(escrowLedger.status, "released"))).limit(1);
   if (!escrow) return;
+  const [alreadyCredited] = await db.select({ id: balanceTransactions.id }).from(balanceTransactions)
+    .where(and(eq(balanceTransactions.ownerId, ownerId), eq(balanceTransactions.orderId, orderId), eq(balanceTransactions.type, "sale_released"))).limit(1);
+  if (alreadyCredited) return;
   const [current] = await db.select().from(sellerBalances).where(eq(sellerBalances.ownerId, ownerId)).limit(1);
   if (current) {
     await db.update(sellerBalances).set({ availableCents: current.availableCents + amountCents, totalEarnedCents: current.totalEarnedCents + amountCents, updatedAt: new Date().toISOString() }).where(eq(sellerBalances.ownerId, ownerId));

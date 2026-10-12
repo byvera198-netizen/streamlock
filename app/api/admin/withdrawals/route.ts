@@ -29,7 +29,8 @@ export async function POST(request: Request) {
   const [item] = await db.select().from(withdrawals).where(and(eq(withdrawals.id, id), eq(withdrawals.status, "pending_review"))).limit(1);
   if (!item) return Response.json({ error: "Retiro no encontrado o ya revisado." }, { status: 404 });
   const now = new Date().toISOString();
-  await db.update(withdrawals).set({ status: body.decision === "approve" ? "paid" : "rejected", reviewedAt: now }).where(eq(withdrawals.id, id));
+  const [processed] = await db.update(withdrawals).set({ status: body.decision === "approve" ? "paid" : "rejected", reviewedAt: now }).where(and(eq(withdrawals.id, id), eq(withdrawals.status, "pending_review"))).returning({ id: withdrawals.id });
+  if (!processed) return Response.json({ error: "El retiro ya fue procesado por otro administrador." }, { status: 409 });
   if (body.decision === "reject") {
     await db.update(sellerBalances).set({ availableCents: sql`${sellerBalances.availableCents} + ${item.amountCents}`, updatedAt: now }).where(eq(sellerBalances.ownerId, item.ownerId));
     await db.insert(balanceTransactions).values({ ownerId: item.ownerId, type: "withdrawal_rejected", amountCents: item.amountCents, feeCents: 0 });

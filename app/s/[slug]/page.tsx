@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getDb } from "../../../db";
 import { products, stores } from "../../../db/schema";
 import Link from "next/link";
+import { supportContact } from "../../site-config";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,6 @@ export default async function Storefront({ params }: { params: Promise<{ slug: s
     <section className="storefront-catalog"><div className="storefront-heading"><div><p className="kicker">CATÁLOGO</p><h2>Productos disponibles</h2></div><span>{catalog.length} {catalog.length === 1 ? "producto" : "productos"}</span></div>
       {catalog.length === 0 ? <div className="empty-catalog"><b>Esta vitrina está preparando su catálogo.</b><p>Vuelve pronto para descubrir sus productos.</p></div> : <div className="storefront-products">{catalog.map((product) => <article className="storefront-product" key={product.id}><div className="product-image">{product.imageUrl ? <img src={product.imageUrl} alt={product.title} /> : <span>{product.title.slice(0, 1).toUpperCase()}</span>}</div><div className="product-info"><h3>{product.title}</h3><p>{product.stock} disponibles</p><strong>${(product.priceCents / 100).toFixed(2)}</strong><Link className="storefront-buy" href={`/checkout/${product.id}`}>Comprar protegido</Link></div></article>)}</div>}
     </section>
-    <footer className="storefront-footer"><span>StreamLock</span><span>El pago se libera al confirmar la entrega.</span></footer>
+    <footer className="storefront-footer"><span>StreamLock</span><span>El pago se libera al confirmar la entrega.</span><span>Soporte: <a href={`mailto:${supportContact.email}`}>{supportContact.email}</a> · <a href={supportContact.whatsappUrl} target="_blank" rel="noreferrer">WhatsApp {supportContact.whatsappDisplay}</a></span></footer>
   </main>;
 }

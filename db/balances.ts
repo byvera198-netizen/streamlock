@@ -1,7 +1,8 @@
 import { and, eq, sql } from "drizzle-orm";
+import type { getDb } from "./index";
 import { balanceTransactions, escrowLedger, sellerBalances } from "./schema";
 
-export async function creditSellerBalance(db: any, ownerId: string, orderId: number, amountCents: number, feeCents: number) {
+export async function creditSellerBalance(db: ReturnType<typeof getDb>, ownerId: string, orderId: number, amountCents: number, feeCents: number) {
   const [escrow] = await db.select().from(escrowLedger).where(and(eq(escrowLedger.orderId, orderId), eq(escrowLedger.status, "released"))).limit(1);
   if (!escrow) return;
   const [alreadyCredited] = await db.select({ id: balanceTransactions.id }).from(balanceTransactions)

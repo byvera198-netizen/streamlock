@@ -33,7 +33,7 @@ export default function NotificationsPanel({ compact = false }: { compact?: bool
     setLoading(false);
   }
 
-  useEffect(() => { void loadNotifications(); }, []);
+  useEffect(() => { const timer = window.setTimeout(() => { void loadNotifications(); }, 0); return () => window.clearTimeout(timer); }, []);
 
   async function markRead(item: Notification) {
     if (item.readAt) return;

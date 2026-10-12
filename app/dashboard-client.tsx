@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import NotificationsPanel from "./components/notifications-panel";
 
 type Store = { id: number; name: string; slug: string; socialNetwork: string; status: string };
@@ -50,8 +51,8 @@ export default function DashboardClient() {
     else setOrdersMessage(payload.error ?? "No se pudieron cargar los pedidos.");
   }
 
-  useEffect(() => { void loadCatalog(); void loadOrders(); }, []);
-  useEffect(() => { void fetch("/api/seller/balance").then(async (response) => { if (response.ok) { const payload = await response.json(); setBalance(payload.balance); } }); }, []);
+  useEffect(() => { const timer = window.setTimeout(() => { void loadCatalog(); void loadOrders(); }, 0); return () => window.clearTimeout(timer); }, []);
+  useEffect(() => { const timer = window.setTimeout(() => { void fetch("/api/seller/balance").then(async (response) => { if (response.ok) { const payload = await response.json(); setBalance(payload.balance); } }); }, 0); return () => window.clearTimeout(timer); }, []);
 
   async function createStore(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -121,7 +122,7 @@ export default function DashboardClient() {
   }
 
   return <main className="dashboard-shell">
-    <nav className="dashboard-nav"><a href="/" className="brand-logo"><img src="/streamlock-logo.jpg" alt="StreamLock" /></a><span>Centro de negocios</span><a href="/my-orders">Mis compras</a><a href="/profile">Perfil protegido</a><button>Mi cuenta</button></nav>
+    <nav className="dashboard-nav"><Link href="/" className="brand-logo"><img src="/streamlock-logo.jpg" alt="StreamLock" /></Link><span>Centro de negocios</span><Link href="/my-orders">Mis compras</Link><Link href="/profile">Perfil protegido</Link><button>Mi cuenta</button></nav>
     <section className="dashboard-hero"><div><p className="kicker">PRIMER PASO · NEGOCIO VERIFICADO</p><h1>Abre tu vitrina<br /><em>con respaldo.</em></h1><p className="lead">Crea el perfil público de tu negocio. Luego agregaremos productos, inventario y el checkout protegido.</p></div><div className="trust-card"><span>01</span><b>Datos del negocio</b><small>Necesarios para iniciar la verificación.</small><div className="progress"><i /></div><p>1 de 4 pasos</p></div></section>
     <section className="onboarding-grid"><form onSubmit={createStore} className="store-form"><h2>Cuéntanos sobre tu negocio</h2><p>Este nombre aparecerá en tu vitrina y enlaces de venta.</p><label>Nombre comercial<input value={name} onChange={e => setName(e.target.value)} placeholder="Ej. Casa Morena" required minLength={3} /></label><label>Red social principal<select value={network} onChange={e => setNetwork(e.target.value)}><option>Instagram</option><option>TikTok</option><option>Facebook</option><option>WhatsApp</option></select></label><button disabled={loading}>{loading ? "Creando…" : "Crear mi vitrina →"}</button>{message && <output>{message}</output>}</form>
       <aside className="preview-card"><p className="kicker">VISTA PREVIA</p><div className="store-preview"><div className="preview-cover" /><div className="preview-avatar">{name ? name.slice(0,2).toUpperCase() : "TU"}</div><h3>{name || "Tu negocio"} <span>✓</span></h3><p>{network} · Pendiente de verificación</p><div className="preview-line" /><div className="preview-line short" /></div>{store && <div className="created-store"><b>/{store.slug}</b><span>Vitrina creada</span></div>}</aside>

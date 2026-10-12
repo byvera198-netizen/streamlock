@@ -28,7 +28,7 @@ export default function AdminDisputesClient() {
     if (response.ok) await load();
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { const timer = window.setTimeout(() => { void load(); }, 0); return () => window.clearTimeout(timer); }, []);
 
   return <section className="admin-content admin-disputes"><p className="kicker">SEGURIDAD Y MEDIACIÓN</p><h1>Disputas abiertas</h1><p className="admin-lead">Revisa los reclamos antes de decidir el destino de los fondos retenidos.</p>{message && <div className="admin-message">{message}</div>}<div className="admin-list">{items.map(item => <article className="admin-transfer dispute-card" key={item.dispute.id}><div><p className="kicker">ORDEN #{item.dispute.orderId} · {reasonLabels[item.dispute.reason] ?? item.dispute.reason}</p><h2>{item.product.title}</h2><p>{item.store.name} · Abierta el {new Date(item.dispute.createdAt).toLocaleString()}</p><blockquote>{item.dispute.description}</blockquote></div><div className="admin-actions dispute-actions"><textarea placeholder="Resolución registrada" value={resolution[item.dispute.id] ?? ""} onChange={e => setResolution({ ...resolution, [item.dispute.id]: e.target.value })} /><button disabled={busy === item.dispute.id} onClick={() => void decide(item.dispute.id, "refund")}>Reembolsar comprador</button><button disabled={busy === item.dispute.id} onClick={() => void decide(item.dispute.id, "release")}>Liberar al vendedor</button><button className="reject" disabled={busy === item.dispute.id} onClick={() => void decide(item.dispute.id, "reject")}>Rechazar reclamo</button></div></article>)}</div></section>;
 }

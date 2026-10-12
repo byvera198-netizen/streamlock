@@ -24,7 +24,7 @@ export default function AdminProfilesClient() {
     if (response.ok) await load();
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { const timer = window.setTimeout(() => { void load(); }, 0); return () => window.clearTimeout(timer); }, []);
 
   return <section className="admin-content admin-disputes"><p className="kicker">IDENTIDAD Y CONFIANZA</p><h1>Perfiles por revisar</h1><p className="admin-lead">Confirma los datos básicos antes de permitir operaciones sensibles. La identificación completa no se muestra ni se almacena en StreamLock.</p>{message && <div className="admin-message">{message}</div>}<div className="admin-list">{items.map(profile => <article className="admin-transfer profile-review" key={profile.userId}><div><p className="kicker">USUARIO · {profile.userId}</p><h2>{profile.legalName}</h2><p>Identificación terminada en <b>****{profile.idLast4}</b> · Actualizado {new Date(profile.updatedAt).toLocaleString()}</p><p>Teléfono: <b>{profile.phone}</b></p><p>Dirección: <b>{profile.address}</b></p></div><div className="admin-actions"><button disabled={busy === profile.userId} onClick={() => void decide(profile.userId, "approve")}>Aprobar perfil</button><button className="reject" disabled={busy === profile.userId} onClick={() => void decide(profile.userId, "reject")}>Rechazar</button></div></article>)}</div></section>;
 }

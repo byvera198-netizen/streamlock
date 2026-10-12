@@ -34,8 +34,10 @@ export async function POST(request: Request) {
   const [row] = await db.select({ submission: bankTransferSubmissions, order: orders, store: stores }).from(bankTransferSubmissions)
     .innerJoin(orders, eq(bankTransferSubmissions.orderId, orders.id)).innerJoin(stores, eq(orders.storeId, stores.id)).where(and(eq(bankTransferSubmissions.id, submissionId), eq(bankTransferSubmissions.status, "pending_review"))).limit(1);
   if (!row) return Response.json({ error: "Comprobante no encontrado o ya revisado." }, { status: 404 });
+  if (row.order.status !== "payment_pending") return Response.json({ error: "La orden ya cambió de estado y requiere revisión manual." }, { status: 409 });
   const approved = body.decision === "approve";
-  await db.update(bankTransferSubmissions).set({ status: approved ? "approved" : "rejected", reviewedAt: new Date().toISOString() }).where(eq(bankTransferSubmissions.id, submissionId));
+  const [reviewed] = await db.update(bankTransferSubmissions).set({ status: approved ? "approved" : "rejected", reviewedAt: new Date().toISOString() }).where(and(eq(bankTransferSubmissions.id, submissionId), eq(bankTransferSubmissions.status, "pending_review"))).returning({ id: bankTransferSubmissions.id });
+  if (!reviewed) return Response.json({ error: "El comprobante ya fue revisado por otro administrador." }, { status: 409 });
   await db.update(orders).set({ status: approved ? "payment_held" : "payment_failed" }).where(eq(orders.id, row.order.id));
   await db.update(escrowLedger).set({ status: approved ? "funds_held" : "payment_failed", ...(approved ? { heldAt: new Date().toISOString() } : {}) }).where(eq(escrowLedger.orderId, row.order.id));
   if (!approved) await db.update(products).set({ stock: sql`${products.stock} + ${row.order.quantity}` }).where(eq(products.id, row.order.productId));

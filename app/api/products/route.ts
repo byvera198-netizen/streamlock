@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { getDb } from "../../../db";
-import { products, stores } from "../../../db/schema";
+import { products, stores, userProfiles } from "../../../db/schema";
 
 export async function GET() {
   const user = await getChatGPTUser();
@@ -32,6 +32,8 @@ export async function POST(request: Request) {
   }
   const owned = await getDb().select({ id: stores.id }).from(stores).where(and(eq(stores.id, body.storeId), eq(stores.ownerId, user.userId))).limit(1);
   if (!owned.length) return Response.json({ error: "El negocio no pertenece a esta cuenta." }, { status: 403 });
+  const [profile] = await getDb().select({ status: userProfiles.status }).from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);
+  if (!profile || profile.status !== "approved") return Response.json({ error: "Aprueba tu perfil KYC antes de publicar productos.", code: "PROFILE_NOT_APPROVED" }, { status: 409 });
   const saleMode = body.saleMode === "live" ? "live" : "store";
   const expiresAt = saleMode === "live" ? (body.expiresAt ? new Date(body.expiresAt).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()) : null;
   if (saleMode === "live" && (!expiresAt || Date.parse(expiresAt) <= Date.now())) return Response.json({ error: "La publicación Live debe tener una fecha futura." }, { status: 400 });

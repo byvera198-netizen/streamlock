@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
-import { orders, products, stores } from "../../../../db/schema";
+import { orders, products, stores, userProfiles } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 
 async function getOwnedProduct(productId: number, userId: string) {
@@ -16,6 +16,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ produ
   const current = await getOwnedProduct(productId, user.userId);
   if (!current) return Response.json({ error: "Producto no encontrado." }, { status: 404 });
   if (current.product.status !== "published") return Response.json({ error: "Este producto ya no está activo." }, { status: 409 });
+  const [profile] = await getDb().select({ status: userProfiles.status }).from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);
+  if (!profile || profile.status !== "approved") return Response.json({ error: "Aprueba tu perfil KYC antes de editar productos.", code: "PROFILE_NOT_APPROVED" }, { status: 409 });
   const body = await request.json() as { title?: string; description?: string; category?: string; brand?: string; model?: string; storage?: string | null; color?: string | null; condition?: string; warrantyMonths?: number; price?: number; stock?: number; saleMode?: "store" | "live"; expiresAt?: string | null };
   const title = body.title === undefined ? current.product.title : body.title.trim();
   const description = body.description === undefined ? current.product.description : body.description.trim();

@@ -1,4 +1,5 @@
 import { and, eq, or, isNull, gt } from "drizzle-orm";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getDb } from "../../../db";
 import { products, stores } from "../../../db/schema";
@@ -8,6 +9,23 @@ import CatalogClient from "./catalog-client";
 import ShareStoreButton from "./share-store-button";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const [store] = await getDb().select().from(stores).where(eq(stores.slug, slug)).limit(1);
+  if (!store) return { title: "Vitrina no encontrada · StreamLock" };
+  const verified = store.status === "verified";
+  const description = verified
+    ? `${store.name}: compra con fondos protegidos por StreamLock hasta confirmar la entrega.`
+    : `${store.name}: vitrina en revisión dentro de StreamLock.`;
+  return {
+    title: `${store.name} · StreamLock`,
+    description,
+    alternates: { canonical: `/s/${store.slug}` },
+    openGraph: { title: `${store.name} · StreamLock`, description, type: "website" },
+    twitter: { card: "summary", title: `${store.name} · StreamLock`, description },
+  };
+}
 
 export default async function Storefront({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

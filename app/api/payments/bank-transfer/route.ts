@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
-import { bankAccounts, bankTransferSubmissions, orders } from "../../../../db/schema";
+import { bankAccounts, bankTransferSubmissions, orders, stores } from "../../../../db/schema";
+import { createNotification } from "../../../../db/notifications";
 import { getChatGPTUser } from "../../../../app/chatgpt-auth";
 import { env } from "cloudflare:workers";
 
@@ -39,5 +40,13 @@ export async function POST(request: Request) {
     receiptUrl = `r2://${key}`;
   }
   const [submission] = await db.insert(bankTransferSubmissions).values({ orderId, bank: bank.slug, reference: body.reference.trim().slice(0, 120), amountCents: order.totalCents, receiptUrl }).returning();
+  const [store] = await db.select({ ownerId: stores.ownerId }).from(stores).where(eq(stores.id, order.storeId)).limit(1);
+  if (store) {
+    try {
+      await createNotification(db, { userId: store.ownerId, type: "payment_submitted", title: "Nuevo comprobante recibido", message: `El comprador registró un comprobante para el pedido #${order.id}. El pago está pendiente de revisión administrativa.`, orderId: order.id });
+    } catch {
+      // La recepción del comprobante no debe fallar si el aviso adicional no está disponible.
+    }
+  }
   return Response.json({ submission, message: "Comprobante recibido. La orden queda pendiente de revisión administrativa." }, { status: 201 });
 }

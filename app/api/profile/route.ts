@@ -42,14 +42,15 @@ export async function POST(request: Request) {
   const idNumber = normalizeId(body.idNumber?.trim() ?? "");
   const phone = normalizePhone(body.phone?.trim() ?? "");
   const address = body.address?.trim().replace(/\s+/g, " ") ?? "";
-  if (legalName.length < 5 || idNumber.length < 6 || idNumber.length > 20 || phone.length < 7 || address.length < 10) {
+  const db = getDb();
+  const [existing] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);
+  const identityIsValid = idNumber.length >= 6 && idNumber.length <= 20;
+  if (legalName.length < 5 || (!existing && !identityIsValid) || (idNumber && !identityIsValid) || phone.length < 7 || address.length < 10) {
     return Response.json({ error: "Completa nombre legal, identificación, teléfono y dirección con datos válidos." }, { status: 400 });
   }
 
-  const db = getDb();
   const now = new Date().toISOString();
-  const values = { userId: user.userId, legalName, idNumberHash: await hashIdentity(idNumber), idLast4: idNumber.slice(-4), phone, address, status: "pending_review", updatedAt: now };
-  const [existing] = await db.select({ userId: userProfiles.userId }).from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);
+  const values = { userId: user.userId, legalName, idNumberHash: idNumber ? await hashIdentity(idNumber) : existing?.idNumberHash ?? "", idLast4: idNumber ? idNumber.slice(-4) : existing?.idLast4 ?? "", phone, address, status: "pending_review", updatedAt: now };
   const [profile] = existing
     ? await db.update(userProfiles).set(values).where(eq(userProfiles.userId, user.userId)).returning()
     : await db.insert(userProfiles).values(values).returning();

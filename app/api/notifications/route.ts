@@ -1,4 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
+import { env } from "cloudflare:workers";
 import { getDb } from "../../../db";
 import { notificationPreferences, notifications } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
@@ -14,7 +15,8 @@ export async function GET() {
   } else if (preferences.emailAddress !== user.email.toLowerCase()) {
     [preferences] = await db.update(notificationPreferences).set({ emailAddress: user.email.toLowerCase(), updatedAt: new Date().toISOString() }).where(eq(notificationPreferences.userId, user.userId)).returning();
   }
-  return Response.json({ notifications: rows, unread: rows.filter((row) => !row.readAt).length, preferences });
+  const emailReady = Boolean(env.RESEND_API_KEY?.trim() && env.STREAMLOCK_EMAIL_FROM?.trim());
+  return Response.json({ notifications: rows, unread: rows.filter((row) => !row.readAt).length, preferences, emailReady });
 }
 
 export async function POST(request: Request) {
@@ -23,6 +25,8 @@ export async function POST(request: Request) {
   const body = await request.json() as { notificationId?: number; preferences?: Partial<Record<"inApp" | "email" | "whatsapp" | "sms", boolean>> };
   const db = getDb();
   if (body.preferences) {
+    const emailReady = Boolean(env.RESEND_API_KEY?.trim() && env.STREAMLOCK_EMAIL_FROM?.trim());
+    if (body.preferences.email === true && !emailReady) return Response.json({ error: "El canal de correo aún no está configurado." }, { status: 409 });
     const values = { ...body.preferences, emailAddress: user.email.toLowerCase(), updatedAt: new Date().toISOString() };
     await db.insert(notificationPreferences).values({ userId: user.userId, ...values }).onConflictDoUpdate({ target: notificationPreferences.userId, set: values });
     const [preferences] = await db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, user.userId)).limit(1);

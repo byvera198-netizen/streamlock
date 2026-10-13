@@ -24,13 +24,14 @@ export default function NotificationsPanel({ compact = false }: { compact?: bool
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [preferences, setPreferences] = useState<Preferences | null>(null);
+  const [emailReady, setEmailReady] = useState(false);
   const [savingPreferences, setSavingPreferences] = useState(false);
 
   async function loadNotifications() {
     const response = await fetch("/api/notifications");
     if (response.status === 401) { setLoading(false); return; }
     const payload = await readJson(response);
-    if (response.ok) { setItems(payload.notifications ?? []); setUnread(payload.unread ?? 0); setPreferences(payload.preferences ?? null); }
+    if (response.ok) { setItems(payload.notifications ?? []); setUnread(payload.unread ?? 0); setPreferences(payload.preferences ?? null); setEmailReady(payload.emailReady === true); }
     setLoading(false);
   }
 
@@ -62,7 +63,7 @@ export default function NotificationsPanel({ compact = false }: { compact?: bool
     {open && <div className="notifications-panel">
       <div className="notifications-panel-head"><div><p className="kicker">ACTIVIDAD DE TU CUENTA</p><h2>Avisos importantes</h2></div><button onClick={() => setOpen(false)} aria-label="Cerrar notificaciones">×</button></div>
       {items.length === 0 ? <p className="notifications-empty">No tienes avisos nuevos.</p> : <div className="notifications-list">{items.map((item) => <button className={`notification-item${item.readAt ? " is-read" : ""}`} key={item.id} onClick={() => void markRead(item)}><span className="notification-dot" /><span><strong>{item.title}</strong><small>{item.message}</small><time>{formatDate(item.createdAt)}{item.orderId ? ` · Pedido #${item.orderId}` : ""}</time></span></button>)}</div>}
-      {preferences && <div className="notification-preferences"><p className="kicker">CANALES DE AVISO</p><label><span>Dentro de StreamLock</span><input type="checkbox" checked={preferences.inApp} onChange={(event) => void updatePreference("inApp", event.target.checked)} disabled={savingPreferences} /></label><label><span>Correo electrónico <small>Automático para eventos importantes</small></span><input type="checkbox" checked={preferences.email} onChange={(event) => void updatePreference("email", event.target.checked)} disabled={savingPreferences} /></label><label><span>WhatsApp <small>Próximamente</small></span><input type="checkbox" checked={preferences.whatsapp} onChange={(event) => void updatePreference("whatsapp", event.target.checked)} disabled={savingPreferences} /></label><label><span>SMS <small>Próximamente</small></span><input type="checkbox" checked={preferences.sms} onChange={(event) => void updatePreference("sms", event.target.checked)} disabled={savingPreferences} /></label></div>}
+      {preferences && <div className="notification-preferences"><p className="kicker">CANALES DE AVISO</p><label><span>Dentro de StreamLock</span><input type="checkbox" checked={preferences.inApp} onChange={(event) => void updatePreference("inApp", event.target.checked)} disabled={savingPreferences} /></label><label><span>Correo electrónico <small>{emailReady ? "Activo para eventos importantes" : "Preparado; falta configurar el proveedor"}</small></span><input type="checkbox" checked={preferences.email} onChange={(event) => void updatePreference("email", event.target.checked)} disabled={savingPreferences || !emailReady} /></label><label><span>WhatsApp <small>Próximamente</small></span><input type="checkbox" checked={preferences.whatsapp} onChange={(event) => void updatePreference("whatsapp", event.target.checked)} disabled={savingPreferences} /></label><label><span>SMS <small>Próximamente</small></span><input type="checkbox" checked={preferences.sms} onChange={(event) => void updatePreference("sms", event.target.checked)} disabled={savingPreferences} /></label></div>}
     </div>}
   </section>;
 }

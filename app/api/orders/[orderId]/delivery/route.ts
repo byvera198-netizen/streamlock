@@ -14,9 +14,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
   const [row] = await db.select({ order: orders, store: stores }).from(orders).innerJoin(stores, eq(orders.storeId, stores.id)).where(and(eq(orders.id, orderId), eq(stores.ownerId, seller.userId))).limit(1);
   if (!row) return Response.json({ error: "Orden no encontrada." }, { status: 404 });
   if (row.order.status !== "payment_held") return Response.json({ error: "La orden debe tener el pago retenido antes de entregar." }, { status: 409 });
+  const [existingDelivery] = await db.select({ id: deliveries.id, status: deliveries.status }).from(deliveries).where(eq(deliveries.orderId, orderId)).limit(1);
+  if (existingDelivery) return Response.json({ error: "Esta orden ya tiene un despacho registrado.", deliveryStatus: existingDelivery.status }, { status: 409 });
   const isPickup = row.order.deliveryMethod === "pickup" || body.method === "pickup";
   if (isPickup) {
-    const pickupPin = String(Math.floor(100000 + Math.random() * 900000));
+    const random = new Uint32Array(1);
+    crypto.getRandomValues(random);
+    const pickupPin = String((random[0] % 900000) + 100000);
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     const [delivery] = await db.insert(deliveries).values({ orderId, method: "pickup", status: "ready", pickupPin, pickupPinExpiresAt: expires }).returning();
     await db.update(orders).set({ status: "ready_for_pickup" }).where(eq(orders.id, orderId));

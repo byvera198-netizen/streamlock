@@ -17,6 +17,16 @@ const checks = [
     expected: (response) => response.status === 200,
   },
   {
+    name: "prueba de acceso protegida",
+    request: () => fetch(`${baseUrl}/access-test`, { redirect: "manual" }),
+    expected: (response) => response.status === 302 && response.headers.get("location")?.includes("cloudflareaccess.com"),
+  },
+  {
+    name: "puente de sesión rechaza token inválido",
+    request: () => fetch(`${baseUrl}/api/access-session`, { method: "POST", body: new URLSearchParams({ token: "invalid", returnTo: "/" }) }),
+    expected: (response) => response.status === 401,
+  },
+  {
     name: "salud D1/R2",
     request: () => fetch(`${baseUrl}/api/health`),
     expected: async (response) => response.status === 200 && (await response.clone().json()).status === "ok",

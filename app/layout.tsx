@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import SupportWhatsApp from "./components/support-whatsapp";
 
 export const metadata: Metadata = {
   title: "StreamLock — Negocios verificados",
@@ -17,7 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {children}
+        <SupportWhatsApp />
+      </body>
     </html>
   );
 }

@@ -16,7 +16,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "Producto o cantidad inválidos." }, { status: 400 });
   }
 
-  const [item] = await getDb().select({ product: products, store: stores }).from(products)
+  const db = getDb();
+  const [item] = await db.select({ product: products, store: stores }).from(products)
     .innerJoin(stores, eq(products.storeId, stores.id))
     .where(and(eq(products.id, productId), eq(products.status, "published"), or(eq(products.saleMode, "store"), and(eq(products.saleMode, "live"), or(isNull(products.expiresAt), gt(products.expiresAt, new Date().toISOString())))))).limit(1);
   if (!item) return Response.json({ error: "El producto no está disponible." }, { status: 404 });
@@ -27,7 +28,6 @@ export async function POST(request: Request) {
   const feeCents = Math.round(subtotalCents * SERVICE_FEE_RATE);
   const totalCents = subtotalCents + feeCents;
   const deliveryMethod = body.deliveryMethod === "pickup" ? "pickup" : "courier";
-  const db = getDb();
   const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, buyer.userId)).limit(1);
   if (!profile) return Response.json({ error: "Completa tu perfil de identidad y despacho antes de comprar.", code: "PROFILE_REQUIRED" }, { status: 409 });
   if (profile.status !== "approved") {
@@ -35,14 +35,18 @@ export async function POST(request: Request) {
     return Response.json({ error: message, code: "PROFILE_NOT_APPROVED", status: profile.status }, { status: 409 });
   }
   if (isWhatsAppOtpRequired() && !profile.phoneVerifiedAt) return Response.json({ error: "Verifica tu teléfono antes de comprar.", code: "PHONE_NOT_VERIFIED" }, { status: 409 });
-  const [reserved] = await db.update(products).set({ stock: sql`${products.stock} - ${quantity}` }).where(and(eq(products.id, productId), gte(products.stock, quantity))).returning({ id: products.id });
-  if (!reserved) return Response.json({ error: "El stock cambió mientras procesábamos tu pedido. Intenta nuevamente." }, { status: 409 });
   try {
-    const [order] = await db.insert(orders).values({ buyerId: buyer.userId, storeId: item.store.id, productId, quantity, unitPriceCents: item.product.priceCents, subtotalCents, feeCents, totalCents, deliveryMethod, shippingName: profile.legalName, shippingPhone: profile.phone, shippingAddress: profile.address, status: "payment_pending" }).returning();
-    const [escrow] = await db.insert(escrowLedger).values({ orderId: order.id, amountCents: subtotalCents, feeCents, status: "awaiting_payment" }).returning();
+    const result = await db.transaction(async (tx) => {
+      const [reserved] = await tx.update(products).set({ stock: sql`${products.stock} - ${quantity}` }).where(and(eq(products.id, productId), gte(products.stock, quantity))).returning({ id: products.id });
+      if (!reserved) return null;
+      const [order] = await tx.insert(orders).values({ buyerId: buyer.userId, storeId: item.store.id, productId, quantity, unitPriceCents: item.product.priceCents, subtotalCents, feeCents, totalCents, deliveryMethod, shippingName: profile.legalName, shippingPhone: profile.phone, shippingAddress: profile.address, status: "payment_pending" }).returning();
+      const [escrow] = await tx.insert(escrowLedger).values({ orderId: order.id, amountCents: subtotalCents, feeCents, status: "awaiting_payment" }).returning();
+      return { order, escrow };
+    });
+    if (!result) return Response.json({ error: "El stock cambió mientras procesábamos tu pedido. Intenta nuevamente." }, { status: 409 });
+    const { order, escrow } = result;
     return Response.json({ order, escrow, next: "payment_provider_required" }, { status: 201 });
   } catch {
-    await db.update(products).set({ stock: sql`${products.stock} + ${quantity}` }).where(eq(products.id, productId));
     return Response.json({ error: "No pudimos reservar el pedido. Intenta nuevamente." }, { status: 500 });
   }
 }

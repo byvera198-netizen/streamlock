@@ -15,10 +15,11 @@ export default async function Storefront({ params }: { params: Promise<{ slug: s
   const catalog = await getDb().select().from(products)
     .where(and(eq(products.storeId, store.id), eq(products.status, "published"), gt(products.stock, 0), or(eq(products.saleMode, "store"), and(eq(products.saleMode, "live"), or(isNull(products.expiresAt), gt(products.expiresAt, new Date().toISOString()))))))
     .orderBy(products.id);
+  const isVerified = store.status === "verified";
 
   return <main className="storefront-shell">
     <header className="storefront-header"><Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.jpg" alt="StreamLock" /></Link><span className="secure-label">Compra protegida por StreamLock</span></header>
-    <section className="storefront-hero"><div className="storefront-avatar">{store.name.slice(0, 2).toUpperCase()}</div><p className="kicker">VITRINA VERIFICADA</p><h1>{store.name} <span className="verified-badge">✓</span></h1><p>{store.socialNetwork} · Compra con fondos protegidos hasta confirmar la entrega.</p></section>
+    <section className="storefront-hero"><div className="storefront-avatar">{store.name.slice(0, 2).toUpperCase()}</div><p className="kicker">{isVerified ? "VITRINA VERIFICADA" : "VITRINA EN REVISIÓN"}</p><h1>{store.name} {isVerified && <span className="verified-badge">✓</span>}</h1><p>{store.socialNetwork} · {isVerified ? "Compra con fondos protegidos hasta confirmar la entrega." : "Este negocio está completando su revisión de identidad."}</p></section>
     <section className="storefront-catalog"><div className="storefront-heading"><div><p className="kicker">CATÁLOGO</p><h2>Productos disponibles</h2></div><span>{catalog.length} {catalog.length === 1 ? "producto" : "productos"}</span></div>
       {catalog.length === 0 ? <div className="empty-catalog"><b>Esta vitrina está preparando su catálogo.</b><p>Vuelve pronto para descubrir sus productos.</p></div> : <CatalogClient products={catalog} />}
     </section>

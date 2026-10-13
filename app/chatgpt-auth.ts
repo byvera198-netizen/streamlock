@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { ACCESS_SESSION_COOKIE, readAccessSessionToken, readCookie } from "./access-session";
 
 export type ChatGPTUser = {
   userId: string;
@@ -22,7 +23,7 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   const requestHeaders = await headers();
   const userId = requestHeaders.get(USER_ID_HEADER);
   const email = requestHeaders.get(USER_EMAIL_HEADER);
-  if (!userId || !email) return null;
+  if (!userId || !email) return readAccessSessionToken(readCookie(requestHeaders.get("cookie"), ACCESS_SESSION_COOKIE));
 
   const encodedFullName = requestHeaders.get(USER_FULL_NAME_HEADER);
   const fullName =

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { readJson } from "../../lib/client-json";
 
 type Profile = { userId: string; legalName: string; idLast4: string; phone: string; address: string; status: string; updatedAt: string };
 
@@ -11,7 +12,7 @@ export default function AdminProfilesClient() {
 
   async function load() {
     const response = await fetch("/api/admin/profiles");
-    const payload = await response.json();
+    const payload = await readJson(response);
     if (!response.ok) { setMessage(payload.error ?? "No se pudieron cargar los perfiles."); return; }
     setItems(payload.profiles ?? []); setMessage(payload.profiles?.length ? "" : "No hay perfiles pendientes de revisión.");
   }
@@ -19,7 +20,7 @@ export default function AdminProfilesClient() {
   async function decide(userId: string, decision: "approve" | "reject") {
     setBusy(userId);
     const response = await fetch("/api/admin/profiles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, decision }) });
-    const payload = await response.json(); setBusy(null);
+    const payload = await readJson(response); setBusy(null);
     setMessage(response.ok ? `Perfil ${decision === "approve" ? "aprobado" : "rechazado"}.` : payload.error ?? "No se pudo actualizar el perfil.");
     if (response.ok) await load();
   }

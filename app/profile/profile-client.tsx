@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import { readJson } from "../../lib/client-json";
 
 type Profile = { legalName: string; idLast4: string; phone: string; address: string; status: string; updatedAt: string };
 
@@ -13,12 +14,12 @@ export default function ProfileClient({ signInHref }: { signInHref: string }) {
   const [message, setMessage] = useState("Cargando tu perfil…");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { void fetch("/api/profile").then(async (response) => { const payload = await response.json(); if (!response.ok) { setMessage(payload.error ?? "No se pudo cargar el perfil."); return; } if (payload.profile) { setProfile(payload.profile); setForm({ legalName: payload.profile.legalName, idNumber: "", phone: payload.profile.phone, address: payload.profile.address }); setMessage(""); } else setMessage("Completa tus datos para activar compras protegidas."); }); }, []);
+  useEffect(() => { void fetch("/api/profile").then(async (response) => { const payload = await readJson(response); if (!response.ok) { setMessage(payload.error ?? "No se pudo cargar el perfil."); return; } if (payload.profile) { setProfile(payload.profile); setForm({ legalName: payload.profile.legalName, idNumber: "", phone: payload.profile.phone, address: payload.profile.address }); setMessage(""); } else setMessage("Completa tus datos para activar compras protegidas."); }); }, []);
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setMessage("");
     const response = await fetch("/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-    const payload = await response.json(); setBusy(false);
+    const payload = await readJson(response); setBusy(false);
     if (!response.ok) { setMessage(payload.error ?? "No se pudo guardar el perfil."); return; }
     setProfile(payload.profile); setForm((current) => ({ ...current, idNumber: "" })); setMessage(payload.message);
   }

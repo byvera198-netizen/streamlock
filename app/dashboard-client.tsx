@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import NotificationsPanel from "./components/notifications-panel";
+import { readJson } from "../lib/client-json";
 
 type Store = { id: number; name: string; slug: string; socialNetwork: string; status: string };
 type Product = { id: number; title: string; description: string; priceCents: number; stock: number; status: string; saleMode: string; expiresAt: string | null };
@@ -34,7 +35,7 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
   async function loadCatalog() {
     const [storeResponse, productsResponse] = await Promise.all([fetch("/api/stores"), fetch("/api/products")]);
     if (storeResponse.ok) {
-      const payload = await storeResponse.json();
+      const payload = await readJson(storeResponse);
       if (payload.store) {
         setStore(payload.store);
         setName(payload.store.name);
@@ -42,26 +43,26 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
       }
     }
     if (productsResponse.ok) {
-      const payload = await productsResponse.json();
+      const payload = await readJson(productsResponse);
       setProducts(payload.products ?? []);
     }
   }
 
   async function loadOrders() {
     const response = await fetch("/api/seller/orders");
-    const payload = await response.json();
+    const payload = await readJson(response);
     if (response.ok) setOrders(payload.orders ?? []);
     else setOrdersMessage(payload.error ?? "No se pudieron cargar los pedidos.");
   }
 
   useEffect(() => { const timer = window.setTimeout(() => { void loadCatalog(); void loadOrders(); }, 0); return () => window.clearTimeout(timer); }, []);
-  useEffect(() => { const timer = window.setTimeout(() => { void fetch("/api/seller/balance").then(async (response) => { if (response.ok) { const payload = await response.json(); setBalance(payload.balance); } }); }, 0); return () => window.clearTimeout(timer); }, []);
+  useEffect(() => { const timer = window.setTimeout(() => { void fetch("/api/seller/balance").then(async (response) => { if (response.ok) { const payload = await readJson(response); setBalance(payload.balance); } }); }, 0); return () => window.clearTimeout(timer); }, []);
 
   async function createStore(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true); setMessage("");
     const response = await fetch("/api/stores", { method: store ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, socialNetwork: network }) });
-    const payload = await response.json();
+    const payload = await readJson(response);
     setLoading(false);
     if (!response.ok) { setMessage(payload.error ?? "No se pudo crear el negocio."); return; }
     setStore(payload.store); setName(payload.store.name); setNetwork(payload.store.socialNetwork);
@@ -72,21 +73,21 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
   async function registerDelivery(order: SellerOrder) {
     const data = courier[order.id] ?? { carrier: "", trackingCode: "" };
     const response = await fetch(`/api/orders/${order.id}/delivery`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    const payload = await response.json();
+    const payload = await readJson(response);
     setOrdersMessage(response.ok ? "Despacho registrado. El comprador ya puede seguir su pedido." : payload.error ?? "No se pudo registrar el despacho.");
     if (response.ok) void loadOrders();
   }
 
   async function preparePickup(order: SellerOrder) {
     const response = await fetch(`/api/orders/${order.id}/delivery`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ method: "pickup" }) });
-    const payload = await response.json();
+    const payload = await readJson(response);
     setOrdersMessage(response.ok ? "Entrega presencial preparada. El comprador recibió su PIN en su área segura." : payload.error ?? "No se pudo preparar la entrega.");
     if (response.ok) void loadOrders();
   }
 
   async function confirmPickup(order: SellerOrder) {
     const response = await fetch(`/api/orders/${order.id}/pickup-confirm`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: pickupPins[order.id] ?? "" }) });
-    const payload = await response.json();
+    const payload = await readJson(response);
     setOrdersMessage(response.ok ? "Entrega confirmada y fondos liberados." : payload.error ?? "No se pudo validar el PIN.");
     if (response.ok) void loadOrders();
   }
@@ -98,12 +99,12 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
     if (productImage) {
       const imageData = new FormData(); imageData.set("storeId", String(store.id)); imageData.set("file", productImage);
       const imageResponse = await fetch("/api/products/image", { method: "POST", body: imageData });
-      const imagePayload = await imageResponse.json();
+      const imagePayload = await readJson(imageResponse);
       if (!imageResponse.ok) { setProductMessage(imagePayload.error ?? "No se pudo subir la imagen."); return; }
       imageUrl = imagePayload.imageUrl;
     }
     const response = await fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storeId: store.id, ...product, imageUrl }) });
-    const payload = await response.json();
+    const payload = await readJson(response);
     if (!response.ok) { setProductMessage(payload.error ?? "No se pudo publicar el producto."); return; }
     setProducts((current) => [payload.product, ...current]); setProduct({ title: "", description: "", price: "", stock: "", imageUrl: "", saleMode: "store", expiresAt: "" }); setProductImage(null); setProductMessage(product.saleMode === "live" ? "Venta Live publicada por 24 horas." : "Producto publicado en tu vitrina.");
   }
@@ -111,7 +112,7 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
   async function requestWithdrawal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setWithdrawalMessage("");
     const response = await fetch("/api/seller/withdrawals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amountCents: Math.round(Number(withdrawal.amount) * 100), method: withdrawal.method, destination: withdrawal.destination }) });
-    const payload = await response.json(); setWithdrawalMessage(response.ok ? "Solicitud enviada. El administrador revisará tu retiro." : payload.error ?? "No se pudo solicitar el retiro.");
+    const payload = await readJson(response); setWithdrawalMessage(response.ok ? "Solicitud enviada. El administrador revisará tu retiro." : payload.error ?? "No se pudo solicitar el retiro.");
     if (response.ok) { setBalance((current) => ({ ...current, availableCents: current.availableCents - Math.round(Number(withdrawal.amount) * 100) })); setWithdrawal({ amount: "", method: "bank_transfer", destination: "" }); }
   }
 
@@ -122,7 +123,7 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
     const price = Number(edit.price);
     if (!edit.title.trim() || edit.title.trim().length < 2 || edit.description.length > 2000 || !Number.isFinite(price) || price <= 0 || !Number.isInteger(stock) || stock < 0) { setProductMessage("Completa nombre, descripción, precio y stock con valores válidos."); return; }
     const response = await fetch(`/api/products/${productId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: edit.title, description: edit.description, price, stock, saleMode: edit.saleMode, expiresAt: edit.expiresAt || null }) });
-    const payload = await response.json();
+    const payload = await readJson(response);
     setProductMessage(response.ok ? "Producto actualizado." : payload.error ?? "No se pudo actualizar el producto.");
     if (response.ok) { setProducts(current => current.map(item => item.id === productId ? payload.product : item)); setEditingProductId(null); setProductEdits(current => { const next = { ...current }; delete next[productId]; return next; }); }
   }

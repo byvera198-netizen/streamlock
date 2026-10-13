@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { readJson } from "../../lib/client-json";
 
 type Transfer = { submission: { id: number; bank: string; reference: string; amountCents: number; receiptUrl: string | null; submittedAt: string }; order: { id: number; buyerId: string }; product: { title: string }; store: { name: string } };
 
@@ -12,7 +13,7 @@ export default function AdminTransfersClient() {
 
   async function load() {
     const response = await fetch("/api/admin/bank-transfers");
-    const payload = await response.json();
+    const payload = await readJson(response);
     if (!response.ok) { setMessage(payload.error ?? "No se pudieron cargar los comprobantes."); return; }
     setTransfers(payload.transfers); setMessage(payload.transfers.length ? "" : "No hay comprobantes pendientes.");
   }
@@ -20,7 +21,7 @@ export default function AdminTransfersClient() {
   async function decide(submissionId: number, decision: "approve" | "reject") {
     setBusy(submissionId);
     const response = await fetch("/api/admin/bank-transfers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ submissionId, decision }) });
-    const payload = await response.json(); setBusy(null);
+    const payload = await readJson(response); setBusy(null);
     setMessage(response.ok ? `Orden #${payload.orderId}: ${decision === "approve" ? "pago aprobado y retenido" : "pago rechazado"}.` : (payload.error ?? "No se pudo actualizar."));
     if (response.ok) await load();
   }

@@ -31,7 +31,7 @@ async function sign(value: string): Promise<string | null> {
   const secret = env.ACCESS_SESSION_SECRET;
   if (!secret) return null;
   const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return base64UrlEncode(new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(value))));
+  return base64UrlEncode(new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(value) as unknown as BufferSource)));
 }
 
 async function verify(value: string, signature: string): Promise<boolean> {
@@ -40,7 +40,7 @@ async function verify(value: string, signature: string): Promise<boolean> {
   const provided = base64UrlDecode(signature);
   if (!provided) return false;
   const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-  return crypto.subtle.verify("HMAC", key, provided, encoder.encode(value));
+  return crypto.subtle.verify("HMAC", key, provided as unknown as BufferSource, encoder.encode(value) as unknown as BufferSource);
 }
 
 async function userIdForEmail(email: string): Promise<string> {

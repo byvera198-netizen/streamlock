@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { readJson } from "../../lib/client-json";
 
 type Notification = {
   id: number;
@@ -28,7 +29,7 @@ export default function NotificationsPanel({ compact = false }: { compact?: bool
   async function loadNotifications() {
     const response = await fetch("/api/notifications");
     if (response.status === 401) { setLoading(false); return; }
-    const payload = await response.json();
+    const payload = await readJson(response);
     if (response.ok) { setItems(payload.notifications ?? []); setUnread(payload.unread ?? 0); setPreferences(payload.preferences ?? null); }
     setLoading(false);
   }

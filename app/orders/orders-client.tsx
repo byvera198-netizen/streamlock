@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import NotificationsPanel from "../components/notifications-panel";
+import { readJson } from "../../lib/client-json";
 
 type BuyerOrder = {
   id: number; totalCents: number; status: string; deliveryMethod: string; quantity: number;
@@ -27,7 +28,7 @@ export default function OrdersClient() {
 
   async function loadOrders() {
     const response = await fetch("/api/orders");
-    const payload = await response.json();
+    const payload = await readJson(response);
     setLoading(false);
     if (response.ok) setOrders(payload.orders ?? []);
     else setMessage(payload.error ?? "Inicia sesión para ver tus compras.");
@@ -37,27 +38,27 @@ export default function OrdersClient() {
 
   async function showPin(orderId: number) {
     const response = await fetch(`/api/orders/${orderId}/pickup-pin`);
-    const payload = await response.json();
+    const payload = await readJson(response);
     setMessage(response.ok ? `PIN de retiro para el pedido #${orderId}: ${payload.pickupPin}. Válido hasta ${new Date(payload.expiresAt).toLocaleString()}.` : payload.error ?? "No se pudo consultar el PIN.");
   }
 
   async function confirmReceipt(orderId: number) {
     const response = await fetch(`/api/orders/${orderId}/confirm`, { method: "POST" });
-    const payload = await response.json();
+    const payload = await readJson(response);
     setMessage(response.ok ? "Recepción confirmada. El pago fue liberado al vendedor." : payload.error ?? "No se pudo confirmar la recepción.");
     if (response.ok) void loadOrders();
   }
 
   async function openDispute(orderId: number) {
     const response = await fetch(`/api/orders/${orderId}/dispute`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: disputeReason[orderId] ?? "other", description: disputeDescription[orderId] ?? "" }) });
-    const payload = await response.json();
+    const payload = await readJson(response);
     setMessage(response.ok ? "Disputa abierta. El pedido queda protegido mientras el administrador revisa el caso." : payload.error ?? "No se pudo abrir la disputa.");
     if (response.ok) void loadOrders();
   }
 
   async function cancelOrder(orderId: number) {
     const response = await fetch(`/api/orders/${orderId}/cancel`, { method: "POST" });
-    const payload = await response.json();
+    const payload = await readJson(response);
     setMessage(response.ok ? `La orden #${orderId} fue cancelada y el stock quedó liberado.` : payload.error ?? "No se pudo cancelar la orden.");
     if (response.ok) void loadOrders();
   }

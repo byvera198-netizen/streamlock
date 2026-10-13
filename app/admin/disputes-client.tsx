@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { readJson } from "../../lib/client-json";
 
 type Dispute = { dispute: { id: number; orderId: number; reason: string; description: string; createdAt: string }; product: { title: string }; store: { name: string } };
 const reasonLabels: Record<string, string> = { not_received: "No recibió el producto", damaged: "Producto dañado", not_as_described: "No coincide con la publicación", other: "Otro problema" };
@@ -13,7 +14,7 @@ export default function AdminDisputesClient() {
 
   async function load() {
     const response = await fetch("/api/admin/disputes");
-    const payload = await response.json();
+    const payload = await readJson(response);
     if (!response.ok) { setMessage(payload.error ?? "No se pudieron cargar las disputas."); return; }
     setItems(payload.disputes ?? []); setMessage(payload.disputes?.length ? "" : "No hay disputas pendientes.");
   }
@@ -23,7 +24,7 @@ export default function AdminDisputesClient() {
     if (!text) { setMessage("Escribe una resolución antes de cerrar la disputa."); return; }
     setBusy(disputeId);
     const response = await fetch("/api/admin/disputes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ disputeId, decision, resolution: text }) });
-    const payload = await response.json(); setBusy(null);
+    const payload = await readJson(response); setBusy(null);
     setMessage(response.ok ? `Orden #${payload.orderId}: disputa resuelta.` : payload.error ?? "No se pudo resolver la disputa.");
     if (response.ok) await load();
   }

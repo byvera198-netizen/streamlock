@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { readJson } from "../../../lib/client-json";
 
 type Product = { id: number; title: string; description: string; priceCents: number; stock: number; imageUrl: string | null };
 type Store = { name: string; slug: string };
@@ -26,7 +27,7 @@ export default function CheckoutClient({ product, store }: { product: Product; s
   const loadAccounts = useCallback(async () => {
     if (accounts.length) return;
     const response = await fetch("/api/payments/bank-transfer");
-    if (response.ok) setAccounts((await response.json()).accounts);
+    if (response.ok) setAccounts((await readJson(response)).accounts);
   }, [accounts.length]);
 
   useEffect(() => { const timer = window.setTimeout(() => { void loadAccounts(); }, 0); return () => window.clearTimeout(timer); }, [loadAccounts]);
@@ -35,12 +36,12 @@ export default function CheckoutClient({ product, store }: { product: Product; s
     event.preventDefault(); setBusy(true); setMessage("");
     if (!receipt) { setBusy(false); setMessage("Adjunta el comprobante del depósito o transferencia para continuar."); return; }
     const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: product.id, quantity, deliveryMethod }) });
-    const payload = await response.json(); setBusy(false);
+    const payload = await readJson(response); setBusy(false);
     if (!response.ok) { setProfileRequired(payload.code === "PROFILE_REQUIRED"); setProfileNotApproved(payload.code === "PROFILE_NOT_APPROVED"); setMessage(payload.error ?? "No se pudo iniciar la orden."); return; }
     setProfileRequired(false); setProfileNotApproved(false);
     const transferData = new FormData(); transferData.set("orderId", String(payload.order.id)); transferData.set("bank", bank); transferData.set("reference", reference); if (receipt) transferData.set("receipt", receipt);
     const transfer = await fetch("/api/payments/bank-transfer", { method: "POST", body: transferData });
-    const transferPayload = await transfer.json();
+    const transferPayload = await readJson(transfer);
     setMessage(transfer.ok ? `Orden #${payload.order.id} creada. ${transferPayload.message}` : (transferPayload.error ?? "La orden fue creada, pero falta registrar el comprobante."));
   }
 

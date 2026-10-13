@@ -74,30 +74,35 @@ export default function CheckoutClient({ product, store }: { product: Product; s
       return;
     }
 
-    const response = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: product.id, quantity, deliveryMethod }),
-    });
-    const payload = await readJson(response);
-    setBusy(false);
-    if (!response.ok) {
-      setProfileRequired(payload.code === "PROFILE_REQUIRED");
-      setProfileNotApproved(payload.code === "PROFILE_NOT_APPROVED");
-      setMessage(payload.error ?? "No se pudo iniciar la orden.");
-      return;
-    }
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id, quantity, deliveryMethod }),
+      });
+      const payload = await readJson(response);
+      if (!response.ok) {
+        setProfileRequired(payload.code === "PROFILE_REQUIRED");
+        setProfileNotApproved(payload.code === "PROFILE_NOT_APPROVED");
+        setMessage(payload.error ?? "No se pudo iniciar la orden.");
+        return;
+      }
 
-    setProfileRequired(false);
-    setProfileNotApproved(false);
-    const transferData = new FormData();
-    transferData.set("orderId", String(payload.order.id));
-    transferData.set("bank", bank);
-    transferData.set("reference", reference);
-    transferData.set("receipt", receipt);
-    const transfer = await fetch("/api/payments/bank-transfer", { method: "POST", body: transferData });
-    const transferPayload = await readJson(transfer);
-    setMessage(transfer.ok ? `Orden #${payload.order.id} creada. ${transferPayload.message}` : (transferPayload.error ?? "La orden fue creada, pero falta registrar el comprobante."));
+      setProfileRequired(false);
+      setProfileNotApproved(false);
+      const transferData = new FormData();
+      transferData.set("orderId", String(payload.order.id));
+      transferData.set("bank", bank);
+      transferData.set("reference", reference);
+      transferData.set("receipt", receipt);
+      const transfer = await fetch("/api/payments/bank-transfer", { method: "POST", body: transferData });
+      const transferPayload = await readJson(transfer);
+      setMessage(transfer.ok ? `Orden #${payload.order.id} creada. ${transferPayload.message}` : (transferPayload.error ?? "La orden fue creada, pero falta registrar el comprobante."));
+    } catch {
+      setMessage("No se pudo completar el registro. Verifica tu conexión y vuelve a intentarlo.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -124,7 +129,7 @@ export default function CheckoutClient({ product, store }: { product: Product; s
           <label>Método de pago<select value={paymentMethod} onChange={event => { setPaymentMethod(event.target.value); if (event.target.value === "bank_transfer") void loadAccounts(); }}><option value="bank_transfer">Transferencia o depósito bancario</option><option value="card" disabled>Tarjeta (próximamente)</option></select></label>
           {paymentMethod === "bank_transfer" && <div className="bank-transfer-box"><b>Realiza el depósito a una de estas cuentas</b>{accounts.map(account => <button className={`bank-account ${bank === account.id ? "selected" : ""}`} type="button" key={account.id} onClick={() => setBank(account.id)}><span>{account.bank}</span><small>{account.accountType} · {account.accountNumber}</small></button>)}<label>Número de comprobante<input value={reference} onChange={event => setReference(event.target.value)} placeholder="Ej. 00458219" required /></label><label>Archivo del comprobante (PDF, JPG, PNG o WebP) *<input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={event => setReceipt(event.target.files?.[0] ?? null)} required /></label><small>Obligatorio · máximo 5 MB. La activación se confirma después de verificar el comprobante.</small></div>}
           <div className="checkout-summary"><span>Subtotal <b>${(subtotal / 100).toFixed(2)}</b></span><span>Servicio de custodia (7%) <b>${(fee / 100).toFixed(2)}</b></span><span>Total <b>${((subtotal + fee) / 100).toFixed(2)}</b></span></div>
-          <button disabled={!storeVerified || busy || product.stock < 1 || !reference.trim() || !receipt}>{!storeVerified ? "Checkout pendiente de verificación" : busy ? "Registrando…" : "Registrar transferencia →"}</button>
+          <button disabled={!storeVerified || busy || product.stock < 1 || !reference.trim() || !receipt}>{!storeVerified ? "Checkout pendiente de verificación" : busy ? "Procesando comprobante…" : "Registrar transferencia →"}</button>
           {message && <output>{message}</output>}
           {(profileRequired || profileNotApproved) && <Link prefetch={false} className="profile-required-link" href="/profile">Revisar mi perfil protegido →</Link>}
           <small>La orden permanece pendiente hasta que un administrador valide el comprobante. No envíes el producto antes de recibir la confirmación.</small>

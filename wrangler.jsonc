@@ -5,6 +5,10 @@
   "compatibility_date": "2026-10-11",
   "compatibility_flags": ["nodejs_compat"],
   "triggers": { "crons": ["0 * * * *"] },
+  "vars": {
+    "WHATSAPP_API_VERSION": "v25.0",
+    "WHATSAPP_PHONE_NUMBER_ID": "1404872032704394"
+  },
   "assets": { "directory": "dist/client" },
   "r2_buckets": [{ "binding": "RECEIPTS", "bucket_name": "streamlock-receipts" }],
   "d1_databases": [

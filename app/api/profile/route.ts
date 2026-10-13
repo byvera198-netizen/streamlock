@@ -21,6 +21,7 @@ function safeProfile(profile: typeof userProfiles.$inferSelect) {
     legalName: profile.legalName,
     idLast4: profile.idLast4,
     phone: profile.phone,
+    phoneVerifiedAt: profile.phoneVerifiedAt,
     address: profile.address,
     status: profile.status,
     updatedAt: profile.updatedAt,
@@ -50,7 +51,8 @@ export async function POST(request: Request) {
   }
 
   const now = new Date().toISOString();
-  const values = { userId: user.userId, legalName, idNumberHash: idNumber ? await hashIdentity(idNumber) : existing?.idNumberHash ?? "", idLast4: idNumber ? idNumber.slice(-4) : existing?.idLast4 ?? "", phone, address, status: "pending_review", updatedAt: now };
+  const phoneChanged = existing ? existing.phone !== phone : true;
+  const values = { userId: user.userId, legalName, idNumberHash: idNumber ? await hashIdentity(idNumber) : existing?.idNumberHash ?? "", idLast4: idNumber ? idNumber.slice(-4) : existing?.idLast4 ?? "", phone, phoneVerifiedAt: phoneChanged ? null : existing?.phoneVerifiedAt ?? null, phoneVerificationCodeHash: phoneChanged ? null : existing?.phoneVerificationCodeHash ?? null, phoneVerificationExpiresAt: phoneChanged ? null : existing?.phoneVerificationExpiresAt ?? null, phoneVerificationLastSentAt: phoneChanged ? null : existing?.phoneVerificationLastSentAt ?? null, phoneVerificationAttempts: phoneChanged ? 0 : existing?.phoneVerificationAttempts ?? 0, address, status: "pending_review", updatedAt: now };
   const [profile] = existing
     ? await db.update(userProfiles).set(values).where(eq(userProfiles.userId, user.userId)).returning()
     : await db.insert(userProfiles).values(values).returning();

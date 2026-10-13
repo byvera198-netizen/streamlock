@@ -19,7 +19,7 @@ type Product = {
   imageUrl: string | null;
 };
 
-type Store = { name: string; slug: string };
+type Store = { name: string; slug: string; status: string };
 type BankAccount = { id: string; bank: string; accountType: string; accountNumber: string };
 
 function conditionLabel(value: string) {
@@ -38,6 +38,7 @@ export default function CheckoutClient({ product, store }: { product: Product; s
   const [busy, setBusy] = useState(false);
   const [profileRequired, setProfileRequired] = useState(false);
   const [profileNotApproved, setProfileNotApproved] = useState(false);
+  const storeVerified = store.status === "verified";
   const subtotal = useMemo(() => product.priceCents * quantity, [product.priceCents, quantity]);
   const fee = Math.round(subtotal * 0.07);
   const productImage = product.imageUrl?.startsWith("r2://") ? `/api/products/media?key=${encodeURIComponent(product.imageUrl.slice(5))}` : product.imageUrl;
@@ -112,6 +113,7 @@ export default function CheckoutClient({ product, store }: { product: Product; s
           {product.description && <p className="product-description">{product.description}</p>}
           {specs.length > 0 && <div className="checkout-specs" aria-label="Especificaciones del producto">{specs.map((spec) => <span key={spec}>{spec}</span>)}</div>}
           <p className="checkout-muted">Vendido por {store.name}. El vendedor no recibe los fondos hasta validar la entrega.</p>
+          {!storeVerified && <div className="store-status-notice"><b>Vitrina en revisión</b><span>StreamLock aún está verificando este negocio. El checkout quedará habilitado cuando la vitrina sea aprobada.</span></div>}
           <strong className="checkout-price">${(product.priceCents / 100).toFixed(2)}</strong>
         </div>
         <form className="checkout-form" onSubmit={createOrder}>
@@ -120,7 +122,7 @@ export default function CheckoutClient({ product, store }: { product: Product; s
           <label>Método de pago<select value={paymentMethod} onChange={event => { setPaymentMethod(event.target.value); if (event.target.value === "bank_transfer") void loadAccounts(); }}><option value="bank_transfer">Transferencia o depósito bancario</option><option value="card" disabled>Tarjeta (próximamente)</option></select></label>
           {paymentMethod === "bank_transfer" && <div className="bank-transfer-box"><b>Realiza el depósito a una de estas cuentas</b>{accounts.map(account => <button className={`bank-account ${bank === account.id ? "selected" : ""}`} type="button" key={account.id} onClick={() => setBank(account.id)}><span>{account.bank}</span><small>{account.accountType} · {account.accountNumber}</small></button>)}<label>Número de comprobante<input value={reference} onChange={event => setReference(event.target.value)} placeholder="Ej. 00458219" required /></label><label>Archivo del comprobante (PDF, JPG, PNG o WebP) *<input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={event => setReceipt(event.target.files?.[0] ?? null)} required /></label><small>Obligatorio · máximo 5 MB. La activación se confirma después de verificar el comprobante.</small></div>}
           <div className="checkout-summary"><span>Subtotal <b>${(subtotal / 100).toFixed(2)}</b></span><span>Servicio de custodia (7%) <b>${(fee / 100).toFixed(2)}</b></span><span>Total <b>${((subtotal + fee) / 100).toFixed(2)}</b></span></div>
-          <button disabled={busy || product.stock < 1 || !reference.trim() || !receipt}>{busy ? "Registrando…" : "Registrar transferencia →"}</button>
+          <button disabled={!storeVerified || busy || product.stock < 1 || !reference.trim() || !receipt}>{!storeVerified ? "Checkout pendiente de verificación" : busy ? "Registrando…" : "Registrar transferencia →"}</button>
           {message && <output>{message}</output>}
           {(profileRequired || profileNotApproved) && <Link prefetch={false} className="profile-required-link" href="/profile">Revisar mi perfil protegido →</Link>}
           <small>La orden permanece pendiente hasta que un administrador valide el comprobante. No envíes el producto antes de recibir la confirmación.</small>

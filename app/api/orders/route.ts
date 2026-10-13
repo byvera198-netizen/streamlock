@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     .innerJoin(stores, eq(products.storeId, stores.id))
     .where(and(eq(products.id, productId), eq(products.status, "published"), or(eq(products.saleMode, "store"), and(eq(products.saleMode, "live"), or(isNull(products.expiresAt), gt(products.expiresAt, new Date().toISOString())))))).limit(1);
   if (!item) return Response.json({ error: "El producto no está disponible." }, { status: 404 });
+  if (item.store.status !== "verified") return Response.json({ error: "La vitrina del vendedor todavía está en revisión. Podrás comprar cuando sea verificada por StreamLock.", code: "STORE_NOT_VERIFIED" }, { status: 409 });
   if (item.product.stock < quantity) return Response.json({ error: "No hay suficiente stock disponible." }, { status: 409 });
 
   const subtotalCents = item.product.priceCents * quantity;

@@ -27,6 +27,11 @@ const checks = [
     expected: (response) => response.status === 401,
   },
   {
+    name: "cierre de sesión protegido",
+    request: () => fetch(`${baseUrl}/signout-with-chatgpt?return_to=%2F`, { redirect: "manual" }),
+    expected: (response) => response.status === 303 && response.headers.get("location") === "/",
+  },
+  {
     name: "salud D1/R2",
     request: () => fetch(`${baseUrl}/api/health`),
     expected: async (response) => response.status === 200 && (await response.clone().json()).status === "ok",

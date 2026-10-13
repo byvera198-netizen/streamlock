@@ -41,8 +41,33 @@ export default async function Storefront({ params }: { params: Promise<{ slug: s
     .where(and(eq(products.storeId, store.id), eq(products.status, "published"), gt(products.stock, 0), or(eq(products.saleMode, "store"), and(eq(products.saleMode, "live"), or(isNull(products.expiresAt), gt(products.expiresAt, new Date().toISOString()))))))
     .orderBy(products.id);
   const isVerified = store.status === "verified";
+  const storefrontUrl = `https://streamlock.profebyron.workers.dev/s/${store.slug}`;
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    name: store.name,
+    url: storefrontUrl,
+    description: isVerified
+      ? `${store.name}: compra con fondos protegidos por StreamLock hasta confirmar la entrega.`
+      : `${store.name}: vitrina en revisión dentro de StreamLock.`,
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: `Productos de ${store.name}`,
+      itemListElement: catalog.map((product) => ({
+        "@type": "Offer",
+        name: product.title,
+        url: `https://streamlock.profebyron.workers.dev/checkout/${product.id}`,
+        priceCurrency: "USD",
+        price: (product.priceCents / 100).toFixed(2),
+        availability: "https://schema.org/InStock",
+        itemCondition: product.condition === "used" ? "https://schema.org/UsedCondition" : product.condition === "refurbished" ? "https://schema.org/RefurbishedCondition" : "https://schema.org/NewCondition",
+      })),
+    },
+  };
+  const structuredDataJson = JSON.stringify(structuredData).replace(/</g, "\\u003c");
 
   return <main className="storefront-shell">
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredDataJson }} />
     <header className="storefront-header"><Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.jpg" alt="StreamLock" /></Link><span className="secure-label">Compra protegida por StreamLock</span></header>
     <section className="storefront-hero"><div className="storefront-avatar">{store.name.slice(0, 2).toUpperCase()}</div><p className="kicker">{isVerified ? "VITRINA VERIFICADA" : "VITRINA EN REVISIÓN"}</p><h1>{store.name} {isVerified && <span className="verified-badge">✓</span>}</h1><p>{store.socialNetwork} · {isVerified ? "Compra con fondos protegidos hasta confirmar la entrega." : "Este negocio está completando su revisión de identidad."}</p><ShareStoreButton /></section>
     <section className="storefront-catalog"><div className="storefront-heading"><div><p className="kicker">CATÁLOGO</p><h2>Productos disponibles</h2></div><span>{catalog.length} {catalog.length === 1 ? "producto" : "productos"}</span></div>

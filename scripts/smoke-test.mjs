@@ -65,7 +65,10 @@ const checks = [
   {
     name: "salud D1/R2",
     request: () => fetch(`${baseUrl}/api/health`),
-    expected: async (response) => response.status === 200 && (await response.clone().json()).status === "ok",
+    expected: async (response) => {
+      const payload = await response.clone().json();
+      return response.status === 200 && payload.status === "ok" && payload.checks?.email === true;
+    },
   },
   {
     name: "cuentas bancarias públicas",

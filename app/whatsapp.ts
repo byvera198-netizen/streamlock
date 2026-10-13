@@ -18,6 +18,10 @@ export function getWhatsAppConfig(): WhatsAppConfig | null {
   return { apiVersion, phoneNumberId, accessToken, templateName, templateLanguage };
 }
 
+export function isWhatsAppOtpRequired() {
+  return env.WHATSAPP_OTP_REQUIRED?.trim().toLowerCase() === "true";
+}
+
 export async function sendWhatsAppOtp(to: string, code: string) {
   const config = getWhatsAppConfig();
   if (!config) return { configured: false as const };

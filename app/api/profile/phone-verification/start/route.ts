@@ -13,7 +13,7 @@ function createCode() {
 export async function POST() {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "Inicia sesión para verificar tu teléfono." }, { status: 401 });
-  if (!getWhatsAppConfig()) return Response.json({ error: "WhatsApp todavía no está configurado en StreamLock. Falta completar la configuración de Meta y Cloudflare." }, { status: 503 });
+  if (!getWhatsAppConfig()) return Response.json({ error: "La verificación por WhatsApp es opcional y todavía no está disponible. Puedes continuar con tu perfil y tus compras protegidas." }, { status: 503 });
 
   const db = getDb();
   const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);

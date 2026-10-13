@@ -116,7 +116,7 @@ Replace the filename with the pending migration and `DB` with your D1 binding na
 
 ## WhatsApp Business Cloud API
 
-La verificación de teléfono está integrada de forma opcional y segura. Mientras faltan las variables de Meta, StreamLock no envía mensajes ni bloquea las compras existentes. Al completar la configuración, las nuevas compras exigirán que el comprador confirme el teléfono mediante un código de seis dígitos con vencimiento de diez minutos.
+La verificación de teléfono está integrada de forma opcional y segura. Mientras faltan las variables de Meta, StreamLock no envía mensajes ni bloquea las compras existentes. Aunque WhatsApp quede configurado, las compras siguen permitidas por defecto; solo se exige la verificación telefónica cuando se define `WHATSAPP_OTP_REQUIRED=true`.
 
 Configura directamente como secretos del Worker, sin copiarlos al repositorio ni compartirlos en el chat:
 
@@ -126,6 +126,7 @@ WHATSAPP_PHONE_NUMBER_ID   # Phone Number ID de WhatsApp Manager
 WHATSAPP_ACCESS_TOKEN      # token permanente del System User
 WHATSAPP_OTP_TEMPLATE_NAME # plantilla aprobada por Meta
 WHATSAPP_OTP_TEMPLATE_LANGUAGE
+WHATSAPP_OTP_REQUIRED      # true solo si se desea hacer obligatorio el OTP
 WHATSAPP_WEBHOOK_VERIFY_TOKEN # secreto elegido para verificar el webhook en Meta
 WHATSAPP_APP_SECRET        # App Secret de Meta, guardado como secreto de Cloudflare
 ```

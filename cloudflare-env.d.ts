@@ -11,6 +11,7 @@ declare namespace Cloudflare {
     WHATSAPP_ACCESS_TOKEN?: string;
     WHATSAPP_OTP_TEMPLATE_NAME?: string;
     WHATSAPP_OTP_TEMPLATE_LANGUAGE?: string;
+    WHATSAPP_OTP_REQUIRED?: string;
     WHATSAPP_WEBHOOK_VERIFY_TOKEN?: string;
     WHATSAPP_APP_SECRET?: string;
   }

@@ -51,6 +51,7 @@ export default function AdminWhatsAppEventsClient() {
           <h2>{status.configured ? "Webhook protegido" : "Configuración incompleta"}</h2>
           <p>Firma HMAC y token de verificación: <b>{status.configured ? "Activos" : "Revisar variables"}</b></p>
           <p>Plantilla OTP de Meta: <b>{status.otpConfigured ? "Lista" : "Pendiente de aprobación"}</b></p>
+          <p>El checkout bancario y las notificaciones dentro de StreamLock no dependen de esta integración.</p>
         </div>
         <div className="admin-actions"><button onClick={() => void load()}>Actualizar estado</button></div>
       </article>

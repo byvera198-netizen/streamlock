@@ -11,7 +11,11 @@ function safeEqual(left: string, right: string) {
 
 async function isValidSignature(request: Request, rawBody: string) {
   const appSecret = env.WHATSAPP_APP_SECRET?.trim();
-  if (!appSecret) return true;
+  // WhatsApp webhooks are always treated as an authenticated integration.
+  // Accepting unsigned requests when the secret is missing would let anyone
+  // write fake events into D1. The integration can remain optional for users;
+  // its endpoint must never become an unsigned write surface.
+  if (!appSecret) return false;
 
   const provided = request.headers.get("x-hub-signature-256") ?? "";
   if (!provided.startsWith("sha256=")) return false;

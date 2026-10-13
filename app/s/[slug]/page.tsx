@@ -14,15 +14,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const [store] = await getDb().select().from(stores).where(eq(stores.slug, slug)).limit(1);
   if (!store) return { title: "Vitrina no encontrada · StreamLock" };
+  const availableProducts = await getDb().select({ title: products.title, priceCents: products.priceCents }).from(products)
+    .where(and(eq(products.storeId, store.id), eq(products.status, "published"), gt(products.stock, 0), or(eq(products.saleMode, "store"), and(eq(products.saleMode, "live"), or(isNull(products.expiresAt), gt(products.expiresAt, new Date().toISOString()))))))
+    .orderBy(products.id);
   const verified = store.status === "verified";
+  const productSummary = availableProducts.length === 0
+    ? "Catálogo en preparación."
+    : `${availableProducts.length} ${availableProducts.length === 1 ? "producto disponible" : "productos disponibles"}${availableProducts[0] ? ` · Desde $${(availableProducts[0].priceCents / 100).toFixed(2)}` : ""}.`;
   const description = verified
-    ? `${store.name}: compra con fondos protegidos por StreamLock hasta confirmar la entrega.`
-    : `${store.name}: vitrina en revisión dentro de StreamLock.`;
+    ? `${store.name}: compra con fondos protegidos por StreamLock hasta confirmar la entrega. ${productSummary}`
+    : `${store.name}: vitrina en revisión dentro de StreamLock. ${productSummary}`;
   return {
     title: `${store.name} · StreamLock`,
     description,
     alternates: { canonical: `/s/${store.slug}` },
-    openGraph: { title: `${store.name} · StreamLock`, description, type: "website" },
+    openGraph: { title: `${store.name} · StreamLock`, description, type: "website", siteName: "StreamLock" },
     twitter: { card: "summary", title: `${store.name} · StreamLock`, description },
   };
 }

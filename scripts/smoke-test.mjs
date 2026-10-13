@@ -27,6 +27,11 @@ const checks = [
     expected: async (response) => response.status === 200 && (await response.clone().text()).includes("COMPRA PROTEGIDA"),
   },
   {
+    name: "referencias públicas de celulares",
+    request: () => fetch(`${baseUrl}/mobile-reference`),
+    expected: async (response) => response.status === 200 && (await response.clone().text()).includes("Modelos para tu catálogo móvil"),
+  },
+  {
     name: "prueba de acceso protegida",
     request: () => fetch(`${baseUrl}/access-test`, { redirect: "manual" }),
     expected: (response) => response.status === 302 && response.headers.get("location")?.includes("cloudflareaccess.com"),

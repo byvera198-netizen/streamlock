@@ -2,6 +2,7 @@ import { and, eq, gte, gt, isNull, or, sql } from "drizzle-orm";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { getDb } from "../../../db";
 import { deliveries, escrowLedger, orders, products, stores, userProfiles } from "../../../db/schema";
+import { getWhatsAppConfig } from "../../whatsapp";
 
 const SERVICE_FEE_RATE = 0.07;
 
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     const message = profile.status === "rejected" ? "Tu perfil fue rechazado. Actualiza tus datos para solicitar una nueva revisión." : "Tu perfil está pendiente de revisión administrativa. Podrás comprar cuando sea aprobado.";
     return Response.json({ error: message, code: "PROFILE_NOT_APPROVED", status: profile.status }, { status: 409 });
   }
+  if (getWhatsAppConfig() && !profile.phoneVerifiedAt) return Response.json({ error: "Verifica tu teléfono por WhatsApp antes de comprar.", code: "PHONE_NOT_VERIFIED" }, { status: 409 });
   const [reserved] = await db.update(products).set({ stock: sql`${products.stock} - ${quantity}` }).where(and(eq(products.id, productId), gte(products.stock, quantity))).returning({ id: products.id });
   if (!reserved) return Response.json({ error: "El stock cambió mientras procesábamos tu pedido. Intenta nuevamente." }, { status: 409 });
   try {

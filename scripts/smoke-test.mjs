@@ -17,6 +17,16 @@ const checks = [
     expected: (response) => response.status === 200,
   },
   {
+    name: "vitrina pública del catálogo",
+    request: () => fetch(`${baseUrl}/s/streamlock-demo`),
+    expected: async (response) => response.status === 200 && (await response.clone().text()).includes("Productos disponibles"),
+  },
+  {
+    name: "checkout público del producto demo",
+    request: () => fetch(`${baseUrl}/checkout/1`),
+    expected: async (response) => response.status === 200 && (await response.clone().text()).includes("COMPRA PROTEGIDA"),
+  },
+  {
     name: "prueba de acceso protegida",
     request: () => fetch(`${baseUrl}/access-test`, { redirect: "manual" }),
     expected: (response) => response.status === 302 && response.headers.get("location")?.includes("cloudflareaccess.com"),

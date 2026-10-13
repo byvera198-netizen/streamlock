@@ -27,6 +27,73 @@ async function isValidSignature(request: Request, rawBody: string) {
   return safeEqual(expected, provided);
 }
 
+async function sha256Hex(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+type WhatsAppPayload = {
+  object?: string;
+  entry?: Array<{
+    id?: string;
+    changes?: Array<{
+      field?: string;
+      value?: {
+        messages?: Array<{ id?: string; type?: string }>;
+        statuses?: Array<{ id?: string; status?: string }>;
+      };
+    }>;
+  }>;
+};
+
+function getEventKeys(payload: WhatsAppPayload, payloadHash: string) {
+  const keys: Array<{ key: string; type: string }> = [];
+  for (const entry of payload.entry ?? []) {
+    for (const change of entry.changes ?? []) {
+      const prefix = `${entry.id ?? "unknown"}:${change.field ?? "unknown"}`;
+      for (const message of change.value?.messages ?? []) {
+        if (message.id) keys.push({ key: `${prefix}:message:${message.id}`, type: "message" });
+      }
+      for (const status of change.value?.statuses ?? []) {
+        if (status.id) keys.push({ key: `${prefix}:status:${status.id}`, type: `status:${status.status ?? "unknown"}` });
+      }
+      if (!(change.value?.messages?.length || change.value?.statuses?.length)) {
+        keys.push({ key: `${prefix}:change:${payloadHash}`, type: "change" });
+      }
+    }
+  }
+  return keys;
+}
+
+async function recordEvents(payload: WhatsAppPayload, rawBody: string) {
+  if (!env.DB) throw new Error("D1 no disponible para registrar el webhook.");
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS whatsapp_webhook_events (
+      event_key TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      payload_hash TEXT NOT NULL,
+      received_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+  ).run();
+
+  const payloadHash = await sha256Hex(rawBody);
+  const keys = getEventKeys(payload, payloadHash);
+  if (!keys.length) return { received: 0, duplicates: 0 };
+
+  const receivedAt = new Date().toISOString();
+  const results = await env.DB.batch(
+    keys.map(({ key, type }) =>
+      env.DB!
+        .prepare(
+          "INSERT OR IGNORE INTO whatsapp_webhook_events (event_key, event_type, payload_hash, received_at) VALUES (?, ?, ?, ?)",
+        )
+        .bind(key, type, payloadHash, receivedAt),
+    ),
+  );
+  const inserted = results.reduce((total, result) => total + (result.meta.changes ?? 0), 0);
+  return { received: inserted, duplicates: keys.length - inserted };
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const mode = url.searchParams.get("hub.mode");
@@ -45,15 +112,15 @@ export async function POST(request: Request) {
   if (!(await isValidSignature(request, rawBody))) return Response.json({ error: "Firma inválida." }, { status: 401 });
 
   try {
-    const payload = JSON.parse(rawBody) as { object?: string; entry?: unknown[] };
+    const payload = JSON.parse(rawBody) as WhatsAppPayload;
     if (payload.object !== "whatsapp_business_account" || !Array.isArray(payload.entry)) {
       return Response.json({ error: "Evento de WhatsApp inválido." }, { status: 400 });
     }
 
-    // Los estados y mensajes se procesarán de forma idempotente en la siguiente
-    // fase. Respondemos 200 para que Meta no reintente eventos válidos.
-    return Response.json({ ok: true });
-  } catch {
-    return Response.json({ error: "JSON inválido." }, { status: 400 });
+    const events = await recordEvents(payload, rawBody);
+    return Response.json({ ok: true, events });
+  } catch (error) {
+    if (error instanceof SyntaxError) return Response.json({ error: "JSON inválido." }, { status: 400 });
+    return Response.json({ error: "No se pudo registrar el evento." }, { status: 503 });
   }
 }

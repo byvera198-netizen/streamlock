@@ -35,7 +35,8 @@ export async function POST(request: Request) {
   if (!row) return Response.json({ error: "Disputa no encontrada o ya resuelta." }, { status: 404 });
   const now = new Date().toISOString();
   const refund = body.decision === "refund";
-  await db.update(disputes).set({ status: refund ? "refunded" : body.decision === "release" ? "resolved" : "rejected", resolution: body.resolution.trim().slice(0, 2000), resolvedAt: now }).where(eq(disputes.id, disputeId));
+  const [resolved] = await db.update(disputes).set({ status: refund ? "refunded" : body.decision === "release" ? "resolved" : "rejected", resolution: body.resolution.trim().slice(0, 2000), resolvedAt: now }).where(and(eq(disputes.id, disputeId), eq(disputes.status, "open"))).returning({ id: disputes.id });
+  if (!resolved) return Response.json({ error: "La disputa ya fue resuelta por otro administrador." }, { status: 409 });
   await db.update(orders).set({ status: refund ? "refunded" : "completed" }).where(eq(orders.id, row.order.id));
   await db.update(escrowLedger).set({ status: refund ? "refunded" : "released", releasedAt: refund ? undefined : now }).where(eq(escrowLedger.orderId, row.order.id));
   if (!refund) await creditSellerBalance(db, row.store.ownerId, row.order.id, row.order.subtotalCents, row.order.feeCents);

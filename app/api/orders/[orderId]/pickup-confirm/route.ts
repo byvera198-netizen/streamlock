@@ -23,8 +23,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
   if (row.delivery.pickupPinExpiresAt && Date.parse(row.delivery.pickupPinExpiresAt) < Date.now()) return Response.json({ error: "El PIN ha expirado." }, { status: 410 });
   if (row.delivery.pickupPin !== body.pin) return Response.json({ error: "PIN incorrecto. Verifica el código mostrado por el comprador." }, { status: 403 });
   const receivedAt = new Date().toISOString();
+  const [completed] = await db.update(orders).set({ status: "completed" }).where(and(eq(orders.id, orderId), eq(orders.status, "ready_for_pickup"))).returning({ id: orders.id });
+  if (!completed) return Response.json({ error: "La orden ya fue procesada por otra solicitud." }, { status: 409 });
   await db.update(deliveries).set({ status: "delivered", receivedAt }).where(eq(deliveries.orderId, orderId));
-  await db.update(orders).set({ status: "completed" }).where(eq(orders.id, orderId));
   await db.update(escrowLedger).set({ status: "released", releasedAt: receivedAt }).where(eq(escrowLedger.orderId, orderId));
   await creditSellerBalance(db, seller.userId, orderId, row.order.subtotalCents, row.order.feeCents);
   await createNotification(db, { userId: row.order.buyerId, type: "order_completed", title: "Entrega presencial confirmada", message: `La entrega del pedido #${orderId} fue validada correctamente.`, orderId });

@@ -62,6 +62,11 @@ const checks = [
     expected: (response) => response.status === 403,
   },
   {
+    name: "verificación de vitrinas protegida",
+    request: () => fetch(`${baseUrl}/api/admin/stores`),
+    expected: (response) => response.status === 403,
+  },
+  {
     name: "catálogo privado",
     request: () => fetch(`${baseUrl}/api/products`),
     expected: (response) => response.status === 401,

@@ -45,7 +45,7 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
     }
     if (productsResponse.ok) {
       const payload = await readJson(productsResponse);
-      setProducts(payload.products ?? []);
+      setProducts((payload.products ?? []).filter((item: Product) => item.status === "published"));
     }
   }
 

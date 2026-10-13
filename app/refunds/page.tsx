@@ -1,0 +1,10 @@
+import LegalPage from "../components/legal-page";
+
+export default function RefundsPage() {
+  return <LegalPage eyebrow="STREAMLOCK · REEMBOLSOS" title="Un proceso claro cuando algo sale mal." intro="La plataforma registra cada orden y ofrece un flujo de cancelación y disputa para proteger a compradores y vendedores." sections={[
+    { title: "1. Antes de la confirmación", body: ["Una orden con comprobante pendiente puede cancelarse desde el flujo disponible, siempre que aún no haya sido confirmada como pago protegido.", "El vendedor no debe enviar el producto mientras la orden no muestre que el pago fue verificado."] },
+    { title: "2. Después del despacho", body: ["El comprador puede revisar el estado de entrega y confirmar la recepción. Si el producto no llega, llega dañado o no coincide con la publicación, puede abrir una disputa dentro del plazo mostrado por la orden.", "El vendedor puede aportar guía, fotografías, comprobantes de entrega y una explicación. La plataforma registra la decisión y notifica a las partes."] },
+    { title: "3. Resolución", body: ["Según la evidencia, la resolución puede mantener la orden, devolver el importe al comprador o liberar el saldo al vendedor. Las comisiones y costos externos deben informarse antes de aplicar una resolución.", "Las transferencias bancarias pueden requerir tiempo adicional de procesamiento y verificación. StreamLock no debe prometer un reembolso instantáneo si depende de una entidad bancaria."] },
+    { title: "4. Contacto y evidencia", body: ["Conserva el número de orden, comprobante, guía, fotografías y comunicaciones relacionadas. No envíes contraseñas, códigos de acceso ni datos bancarios completos por WhatsApp.", "Esta política es una versión inicial y debe revisarse jurídicamente antes de operar con volumen comercial."] },
+  ]} />;
+}

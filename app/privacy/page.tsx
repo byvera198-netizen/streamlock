@@ -1,0 +1,10 @@
+import LegalPage from "../components/legal-page";
+
+export default function PrivacyPage() {
+  return <LegalPage eyebrow="STREAMLOCK · PRIVACIDAD" title="Tus datos deben permanecer bajo control." intro="Esta política explica qué datos usa StreamLock para operar compras protegidas, vitrinas y soporte." sections={[
+    { title: "1. Datos que podemos tratar", body: ["Podemos tratar nombre, correo, teléfono, dirección de despacho, datos básicos de identidad, información del negocio, productos, órdenes, comprobantes y eventos de seguridad.", "Los datos de pago de tarjeta no se almacenan porque la versión actual no procesa tarjetas. Las transferencias se verifican mediante la referencia y el comprobante que el usuario decide enviar."] },
+    { title: "2. Para qué se usan", body: ["Usamos los datos para autenticar la cuenta, prevenir fraude, crear y gestionar órdenes, verificar pagos, coordinar entregas, resolver disputas y atender solicitudes de soporte.", "La dirección y el teléfono del comprador deben permanecer ocultos al vendedor hasta que el pago sea confirmado y solo se revelan cuando son necesarios para la logística de despacho."] },
+    { title: "3. Almacenamiento y conservación", body: ["Los registros operativos se almacenan en Cloudflare D1 y los comprobantes en almacenamiento protegido. El acceso administrativo se restringe mediante autenticación y controles del panel.", "Las imágenes de ventas Live pueden eliminarse cuando la orden temporal se cierra, conforme a la lógica de retención de la plataforma. Los registros necesarios para auditoría, disputas y obligaciones legales pueden conservarse por más tiempo."] },
+    { title: "4. Derechos y solicitudes", body: ["Puedes solicitar corrección, acceso o eliminación de datos cuando no exista una razón operativa o legal para conservarlos. Las solicitudes se atienden por los canales de soporte registrados.", "Antes de publicar la plataforma a escala, esta política debe revisarse con un profesional de privacidad y protección de datos en Ecuador."] },
+  ]} />;
+}

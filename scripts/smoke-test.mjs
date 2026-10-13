@@ -15,6 +15,14 @@ const checks = [
     },
   },
   {
+    name: "páginas legales públicas",
+    request: () => Promise.all([fetch(`${baseUrl}/terms`), fetch(`${baseUrl}/privacy`), fetch(`${baseUrl}/refunds`)]),
+    expected: async (responses) => {
+      const html = await Promise.all(responses.map((response) => response.clone().text()));
+      return responses.every((response) => response.status === 200) && html[0].includes("Términos") && html[1].includes("Privacidad") && html[2].includes("Reembolsos");
+    },
+  },
+  {
     name: "perfil público",
     request: () => fetch(`${baseUrl}/profile`),
     expected: (response) => response.status === 200,

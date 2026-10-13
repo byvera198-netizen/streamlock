@@ -14,8 +14,12 @@ type Notification = {
 };
 type Preferences = { emailAddress: string | null; inApp: boolean; email: boolean; whatsapp: boolean; sms: boolean };
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" });
+function formatDate(value: string | null | undefined) {
+  if (!value) return "Fecha no disponible";
+  const normalized = value.includes("T") ? value : `${value.replace(" ", "T")}Z`;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return "Fecha no disponible";
+  return date.toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" });
 }
 
 export default function NotificationsPanel({ compact = false }: { compact?: boolean }) {

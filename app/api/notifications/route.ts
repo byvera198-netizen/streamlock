@@ -10,7 +10,9 @@ export async function GET() {
   const rows = await db.select().from(notifications).where(eq(notifications.userId, user.userId)).orderBy(desc(notifications.id)).limit(30);
   let [preferences] = await db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, user.userId)).limit(1);
   if (!preferences) {
-    [preferences] = await db.insert(notificationPreferences).values({ userId: user.userId }).returning();
+    [preferences] = await db.insert(notificationPreferences).values({ userId: user.userId, emailAddress: user.email.toLowerCase() }).returning();
+  } else if (preferences.emailAddress !== user.email.toLowerCase()) {
+    [preferences] = await db.update(notificationPreferences).set({ emailAddress: user.email.toLowerCase(), updatedAt: new Date().toISOString() }).where(eq(notificationPreferences.userId, user.userId)).returning();
   }
   return Response.json({ notifications: rows, unread: rows.filter((row) => !row.readAt).length, preferences });
 }
@@ -21,7 +23,7 @@ export async function POST(request: Request) {
   const body = await request.json() as { notificationId?: number; preferences?: Partial<Record<"inApp" | "email" | "whatsapp" | "sms", boolean>> };
   const db = getDb();
   if (body.preferences) {
-    const values = { ...body.preferences, updatedAt: new Date().toISOString() };
+    const values = { ...body.preferences, emailAddress: user.email.toLowerCase(), updatedAt: new Date().toISOString() };
     await db.insert(notificationPreferences).values({ userId: user.userId, ...values }).onConflictDoUpdate({ target: notificationPreferences.userId, set: values });
     const [preferences] = await db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, user.userId)).limit(1);
     return Response.json({ ok: true, preferences });

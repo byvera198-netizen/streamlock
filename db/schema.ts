@@ -137,6 +137,7 @@ export const notifications = sqliteTable("notifications", {
 
 export const notificationPreferences = sqliteTable("notification_preferences", {
   userId: text("user_id").primaryKey(),
+  emailAddress: text("email_address"),
   inApp: integer("in_app", { mode: "boolean" }).notNull().default(true),
   email: integer("email", { mode: "boolean" }).notNull().default(false),
   whatsapp: integer("whatsapp", { mode: "boolean" }).notNull().default(false),

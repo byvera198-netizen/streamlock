@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { readJson } from "../../../lib/client-json";
+import ShareProductButton from "./share-product-button";
 
 type Product = {
   id: number;
@@ -115,6 +116,7 @@ export default function CheckoutClient({ product, store }: { product: Product; s
           <p className="checkout-muted">Vendido por {store.name}. El vendedor no recibe los fondos hasta validar la entrega.</p>
           {!storeVerified && <div className="store-status-notice"><b>Vitrina en revisión</b><span>StreamLock aún está verificando este negocio. El checkout quedará habilitado cuando la vitrina sea aprobada.</span></div>}
           <strong className="checkout-price">${(product.priceCents / 100).toFixed(2)}</strong>
+          <ShareProductButton productTitle={product.title} />
         </div>
         <form className="checkout-form" onSubmit={createOrder}>
           <label>Cantidad<select value={quantity} onChange={event => setQuantity(Number(event.target.value))}>{Array.from({ length: Math.min(product.stock, 20) }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label>

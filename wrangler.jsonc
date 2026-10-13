@@ -11,7 +11,8 @@
     {
       "binding": "DB",
       "database_name": "streamlock-db",
-      "database_id": "23a80694-54bc-486d-b0a5-0426ac73a0d9"
+      "database_id": "23a80694-54bc-486d-b0a5-0426ac73a0d9",
+      "migrations_dir": "drizzle"
     }
   ],
   "observability": { "enabled": true }

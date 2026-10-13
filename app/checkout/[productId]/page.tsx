@@ -12,6 +12,6 @@ export default async function CheckoutPage({ params }: { params: Promise<{ produ
   if (!Number.isInteger(id)) notFound();
   const [row] = await getDb().select({ product: products, store: stores }).from(products)
     .innerJoin(stores, eq(products.storeId, stores.id)).where(eq(products.id, id)).limit(1);
-  if (!row || row.product.status !== "published") notFound();
+  if (!row || row.product.status !== "published" || row.product.stock < 1) notFound();
   return <CheckoutClient product={row.product} store={row.store} />;
 }

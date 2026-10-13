@@ -126,6 +126,8 @@ WHATSAPP_PHONE_NUMBER_ID   # Phone Number ID de WhatsApp Manager
 WHATSAPP_ACCESS_TOKEN      # token permanente del System User
 WHATSAPP_OTP_TEMPLATE_NAME # plantilla aprobada por Meta
 WHATSAPP_OTP_TEMPLATE_LANGUAGE
+WHATSAPP_WEBHOOK_VERIFY_TOKEN # secreto elegido para verificar el webhook en Meta
+WHATSAPP_APP_SECRET        # App Secret de Meta, guardado como secreto de Cloudflare
 ```
 
 La plantilla debe aceptar un parámetro de texto en el cuerpo, por ejemplo: `Tu código de StreamLock es {{1}}. No lo compartas.` El número del comprador se toma del perfil en formato internacional ecuatoriano (`+5939XXXXXXXX`); no se configura como un secreto global.

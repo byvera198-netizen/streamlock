@@ -38,9 +38,9 @@ export async function cancelAbandonedOrders(
       environment.DB.prepare("UPDATE escrow_ledger SET status = 'payment_failed' WHERE order_id = ? AND status = 'awaiting_payment'").bind(order.order_id),
       environment.DB.prepare("UPDATE products SET stock = stock + ? WHERE id = ?").bind(order.quantity, order.product_id),
       environment.DB.prepare(
-        `INSERT INTO notifications (user_id, type, title, message, order_id)
-         VALUES (?, 'order_expired', 'Orden cancelada por falta de pago', ?, ?)`,
-      ).bind(order.buyer_id, `La orden #${order.order_id} expiró después de 30 minutos sin registrar un comprobante. El stock fue liberado.`, order.order_id),
+        `INSERT INTO notifications (user_id, type, title, message, order_id, created_at)
+         VALUES (?, 'order_expired', 'Orden cancelada por falta de pago', ?, ?, ?)`,
+      ).bind(order.buyer_id, `La orden #${order.order_id} expiró después de 30 minutos sin registrar un comprobante. El stock fue liberado.`, order.order_id, now),
     ]);
     result.cancelled += 1;
   }

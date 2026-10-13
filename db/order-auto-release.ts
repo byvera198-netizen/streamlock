@@ -85,16 +85,16 @@ export async function autoReleaseDeliveredOrders(
         .bind(order.owner_id, order.order_id, order.subtotal_cents, order.fee_cents),
       environment.DB
         .prepare(
-          `INSERT INTO notifications (user_id, type, title, message, order_id)
-           VALUES (?, 'order_auto_completed', 'Pedido completado automáticamente', ?, ?)`,
+          `INSERT INTO notifications (user_id, type, title, message, order_id, created_at)
+           VALUES (?, 'order_auto_completed', 'Pedido completado automáticamente', ?, ?, ?)`,
         )
-        .bind(order.buyer_id, `El pedido #${order.order_id} se cerró después de 24 horas sin una disputa abierta.`, order.order_id),
+        .bind(order.buyer_id, `El pedido #${order.order_id} se cerró después de 24 horas sin una disputa abierta.`, order.order_id, releasedAt),
       environment.DB
         .prepare(
-          `INSERT INTO notifications (user_id, type, title, message, order_id)
-           VALUES (?, 'funds_released', 'Fondos liberados', ?, ?)`,
+          `INSERT INTO notifications (user_id, type, title, message, order_id, created_at)
+           VALUES (?, 'funds_released', 'Fondos liberados', ?, ?, ?)`,
         )
-        .bind(order.owner_id, `Los fondos del pedido #${order.order_id} fueron liberados automáticamente.`, order.order_id),
+        .bind(order.owner_id, `Los fondos del pedido #${order.order_id} fueron liberados automáticamente.`, order.order_id, releasedAt),
     ]);
     result.released += 1;
   }

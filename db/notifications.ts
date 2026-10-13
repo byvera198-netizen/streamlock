@@ -8,7 +8,7 @@ function escapeHtml(value: string) {
 }
 
 export async function createNotification(db: ReturnType<typeof getDb>, values: { userId: string; type: string; title: string; message: string; orderId?: number }) {
-  const [notification] = await db.insert(notifications).values({ ...values, orderId: values.orderId ?? null }).returning({ id: notifications.id });
+  const [notification] = await db.insert(notifications).values({ ...values, orderId: values.orderId ?? null, createdAt: new Date().toISOString() }).returning({ id: notifications.id });
   if (!notification) return;
   const [preferences] = await db.select({ email: notificationPreferences.email, emailAddress: notificationPreferences.emailAddress }).from(notificationPreferences).where(eq(notificationPreferences.userId, values.userId)).limit(1);
   const emailEnv = env as unknown as { RESEND_API_KEY?: string; STREAMLOCK_EMAIL_FROM?: string; STREAMLOCK_PUBLIC_URL?: string };

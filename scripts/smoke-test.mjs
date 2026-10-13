@@ -130,7 +130,8 @@ for (const check of checks) {
   try {
     const response = await check.request();
     const passed = await check.expected(response);
-    console.log(`${passed ? "PASS" : "FAIL"} ${check.name} (${response.status})`);
+    const status = Array.isArray(response) ? response.map((item) => item.status).join("/") : response.status;
+    console.log(`${passed ? "PASS" : "FAIL"} ${check.name} (${status})`);
     if (!passed) failed = true;
   } catch (error) {
     failed = true;

@@ -23,7 +23,14 @@ export default function AdminWhatsAppEventsClient() {
       setMessage(payload.error ?? "No se pudo cargar el estado de WhatsApp.");
       return;
     }
-    setStatus(payload);
+    setStatus({
+      configured: payload.configured === true,
+      otpConfigured: payload.otpConfigured === true,
+      eventStoreReady: payload.eventStoreReady === true,
+      eventCount: typeof payload.eventCount === "number" ? payload.eventCount : 0,
+      lastReceivedAt: typeof payload.lastReceivedAt === "string" ? payload.lastReceivedAt : null,
+      phoneNumberIdLast4: typeof payload.phoneNumberIdLast4 === "string" ? payload.phoneNumberIdLast4 : null,
+    });
     setMessage("");
   }
 

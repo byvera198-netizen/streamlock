@@ -7,6 +7,14 @@ const checks = [
     expected: (response) => response.status === 200,
   },
   {
+    name: "soporte WhatsApp visible",
+    request: () => fetch(`${baseUrl}/`),
+    expected: async (response) => {
+      const html = await response.clone().text();
+      return response.status === 200 && html.includes("support-whatsapp") && html.includes("593985280991");
+    },
+  },
+  {
     name: "perfil público",
     request: () => fetch(`${baseUrl}/profile`),
     expected: (response) => response.status === 200,

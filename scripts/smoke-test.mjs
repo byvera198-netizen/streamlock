@@ -29,7 +29,7 @@ const checks = [
   {
     name: "referencias públicas de celulares",
     request: () => fetch(`${baseUrl}/mobile-reference`),
-    expected: async (response) => response.status === 200 && (await response.clone().text()).includes("Modelos para tu catálogo móvil"),
+    expected: async (response) => { const html = await response.clone().text(); return response.status === 200 && html.includes("Modelos para tu catálogo móvil") && html.includes("Usar como borrador") && html.includes("reference="); },
   },
   {
     name: "prueba de acceso protegida",

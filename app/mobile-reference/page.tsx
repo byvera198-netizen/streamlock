@@ -17,11 +17,18 @@ const references = [
   { brand: "POCO", model: "POCO F7", price: "Consultar", availability: "Modelo identificado; precio no mostrado en el listado", source: "Xiaomi Latam", url: "https://www.mi.com/latin-es/product-list/phone/poco/" },
 ];
 
+function draftHref(item: (typeof references)[number]) {
+  const numericPrice = Number(item.price.replace(/[^0-9.]/g, "").replace(/,/g, ""));
+  const storage = item.model.match(/(?:^|\s)(?:256|512)GB/i)?.[0]?.trim().replace("GB", " GB") ?? "";
+  const draft = { title: `${item.brand} ${item.model}`, category: "mobile", brand: item.brand, model: item.model, storage, price: Number.isFinite(numericPrice) && numericPrice > 0 ? numericPrice.toFixed(2) : "" };
+  return `/?reference=${encodeURIComponent(JSON.stringify(draft))}`;
+}
+
 export default function MobileReferencePage() {
   return <main className="reference-shell">
     <header className="storefront-header"><Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.jpg" alt="StreamLock" /></Link><Link href="/" prefetch={false} className="secure-label">Volver al panel</Link></header>
     <section className="reference-hero"><p className="kicker">REFERENCIAS DE MERCADO</p><h1>Modelos para tu catálogo móvil.</h1><p>Precios orientativos consultados el 12 de octubre de 2026 en tiendas oficiales de Ecuador y Latinoamérica.</p><div className="reference-warning"><b>No es inventario de StreamLock.</b><span>Verifica existencia, variante, garantía y precio final antes de publicar una oferta.</span></div></section>
-    <section className="reference-grid">{references.map((item) => <article className="reference-card" key={`${item.brand}-${item.model}`}><div className="reference-card-top"><span>{item.brand}</span><small>{item.availability}</small></div><h2>{item.model}</h2><strong>{item.price}</strong><p>Usa esta ficha como punto de partida y completa color, condición, garantía y stock real del vendedor.</p><a href={item.url} target="_blank" rel="noreferrer">Ver fuente: {item.source} ↗</a></article>)}</section>
-    <footer className="storefront-footer"><span>StreamLock</span><span>Precios sujetos a cambio y disponibilidad.</span><Link href="/" prefetch={false}>Publicar desde el panel →</Link></footer>
+    <section className="reference-grid">{references.map((item) => <article className="reference-card" key={`${item.brand}-${item.model}`}><div className="reference-card-top"><span>{item.brand}</span><small>{item.availability}</small></div><h2>{item.model}</h2><strong>{item.price}</strong><p>Usa esta ficha como borrador. Completa color, condición, garantía y stock real antes de publicar.</p><div className="reference-actions"><Link className="reference-use" href={draftHref(item)} prefetch={false}>Usar como borrador →</Link><a href={item.url} target="_blank" rel="noreferrer">Ver fuente: {item.source} ↗</a></div></article>)}</section>
+    <footer className="storefront-footer"><span>StreamLock</span><span>Precios sujetos a cambio y disponibilidad.</span><Link href="/" prefetch={false}>Abrir panel →</Link></footer>
   </main>;
 }

@@ -11,6 +11,7 @@ type SellerOrder = { id: number; totalCents: number; status: string; deliveryMet
 type SellerBalance = { availableCents: number; totalEarnedCents: number };
 
 type DashboardUser = { displayName: string; email: string };
+type ProductReferenceDraft = { title?: string; category?: string; brand?: string; model?: string; storage?: string; price?: string };
 
 export default function DashboardClient({ user, signInHref, signOutHref }: { user: DashboardUser | null; signInHref: string; signOutHref: string }) {
   const [store, setStore] = useState<Store | null>(null);
@@ -56,6 +57,8 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
   }
 
   useEffect(() => { const timer = window.setTimeout(() => { void loadCatalog(); void loadOrders(); }, 0); return () => window.clearTimeout(timer); }, []);
+  useEffect(() => { const timer = window.setTimeout(() => { const params = new URLSearchParams(window.location.search); const raw = params.get("reference") ?? window.localStorage.getItem("streamlock-product-draft"); if (!raw) return; try { const reference = JSON.parse(raw) as ProductReferenceDraft; setProduct(current => ({ ...current, title: reference.title ?? current.title, category: reference.category ?? current.category, brand: reference.brand ?? current.brand, model: reference.model ?? current.model, storage: reference.storage ?? current.storage, price: reference.price ?? current.price })); window.localStorage.setItem("streamlock-product-draft", JSON.stringify(reference)); setProductMessage("Referencia cargada como borrador. Revisa los datos antes de publicar."); if (params.has("reference")) window.history.replaceState({}, "", "/"); } catch { window.localStorage.removeItem("streamlock-product-draft"); } }, 0); return () => window.clearTimeout(timer); }, []);
+  useEffect(() => { if (productMessage.includes("publicada") || productMessage.includes("publicado")) window.localStorage.removeItem("streamlock-product-draft"); }, [productMessage]);
   useEffect(() => { const timer = window.setTimeout(() => { void fetch("/api/seller/balance").then(async (response) => { if (response.ok) { const payload = await readJson(response); setBalance(payload.balance); } }); }, 0); return () => window.clearTimeout(timer); }, []);
 
   async function createStore(event: FormEvent<HTMLFormElement>) {

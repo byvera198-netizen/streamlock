@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const warrantyMonths = body.warrantyMonths === undefined ? 0 : Number(body.warrantyMonths);
   const price = Number(body.price);
   const stock = Number(body.stock);
-  if (!body.storeId || title.length < 2 || description.length > 2000 || category.length > 40 || brand.length > 60 || model.length > 80 || (storage?.length ?? 0) > 30 || (color?.length ?? 0) > 40 || !Number.isFinite(warrantyMonths) || !Number.isInteger(warrantyMonths) || warrantyMonths < 0 || warrantyMonths > 120 || !Number.isFinite(price) || price <= 0 || !Number.isInteger(stock) || stock < 0) {
+  if (!body.storeId || title.length < 2 || description.length > 2000 || category.length > 40 || brand.length > 60 || model.length > 80 || (storage?.length ?? 0) > 30 || (color?.length ?? 0) > 40 || !Number.isSafeInteger(warrantyMonths) || warrantyMonths < 0 || warrantyMonths > 120 || !Number.isFinite(price) || price <= 0 || !Number.isSafeInteger(Math.round(price * 100)) || !Number.isSafeInteger(stock) || stock < 0) {
     return Response.json({ error: "Completa título, precio y stock con valores válidos." }, { status: 400 });
   }
   const owned = await getDb().select({ id: stores.id }).from(stores).where(and(eq(stores.id, body.storeId), eq(stores.ownerId, user.userId))).limit(1);

@@ -28,7 +28,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ produ
   const warrantyMonths = body.warrantyMonths === undefined ? current.product.warrantyMonths : Number(body.warrantyMonths);
   const price = body.price === undefined ? current.product.priceCents / 100 : Number(body.price);
   const stock = body.stock === undefined ? current.product.stock : Number(body.stock);
-  if (title.length < 2 || description.length > 2000 || category.length > 40 || brand.length > 60 || model.length > 80 || (storage?.length ?? 0) > 30 || (color?.length ?? 0) > 40 || !["new", "used", "refurbished"].includes(condition) || !Number.isFinite(warrantyMonths) || !Number.isInteger(warrantyMonths) || warrantyMonths < 0 || warrantyMonths > 120 || !Number.isFinite(price) || price <= 0 || !Number.isInteger(stock) || stock < 0) return Response.json({ error: "Los datos del producto deben ser válidos." }, { status: 400 });
+  if (title.length < 2 || description.length > 2000 || category.length > 40 || brand.length > 60 || model.length > 80 || (storage?.length ?? 0) > 30 || (color?.length ?? 0) > 40 || !["new", "used", "refurbished"].includes(condition) || !Number.isSafeInteger(warrantyMonths) || warrantyMonths < 0 || warrantyMonths > 120 || !Number.isFinite(price) || price <= 0 || !Number.isSafeInteger(Math.round(price * 100)) || !Number.isSafeInteger(stock) || stock < 0) return Response.json({ error: "Los datos del producto deben ser válidos." }, { status: 400 });
   if (body.saleMode !== undefined && body.saleMode !== "store" && body.saleMode !== "live") return Response.json({ error: "El modo de venta no es válido." }, { status: 400 });
   const saleMode = body.saleMode ?? current.product.saleMode;
   let expiresAt: string | null = null;

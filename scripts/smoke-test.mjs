@@ -122,6 +122,11 @@ const checks = [
     request: () => fetch(`${baseUrl}/api/payments/webhook`, { method: "POST", body: "{}" }),
     expected: (response) => response.status === 401,
   },
+  {
+    name: "webhook de WhatsApp rechaza evento sin firma",
+    request: () => fetch(`${baseUrl}/api/webhooks/whatsapp`, { method: "POST", body: JSON.stringify({ object: "whatsapp_business_account", entry: [] }) }),
+    expected: (response) => response.status === 401,
+  },
 ];
 
 let failed = false;

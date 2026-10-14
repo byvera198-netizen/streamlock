@@ -86,6 +86,11 @@ const checks = [
     expected: (response) => response.status === 401,
   },
   {
+    name: "estado WhatsApp protegido",
+    request: () => fetch(`${baseUrl}/api/admin/whatsapp-events`),
+    expected: (response) => response.status === 403,
+  },
+  {
     name: "cuentas bancarias públicas",
     request: () => fetch(`${baseUrl}/api/payments/bank-transfer`),
     expected: async (response) => response.status === 200 && (await response.clone().json()).accounts?.length > 0,

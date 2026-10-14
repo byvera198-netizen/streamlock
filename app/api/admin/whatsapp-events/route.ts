@@ -16,12 +16,23 @@ export async function GET() {
   const appSecretConfigured = Boolean(env.WHATSAPP_APP_SECRET?.trim());
   const verifyTokenConfigured = Boolean(env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim());
   const apiConfigured = Boolean(env.WHATSAPP_API_VERSION?.trim() && env.WHATSAPP_PHONE_NUMBER_ID?.trim());
+  const accessTokenConfigured = Boolean(env.WHATSAPP_ACCESS_TOKEN?.trim());
+  const templateNameConfigured = Boolean(env.WHATSAPP_OTP_TEMPLATE_NAME?.trim());
+  const templateLanguageConfigured = Boolean(env.WHATSAPP_OTP_TEMPLATE_LANGUAGE?.trim());
   const otpConfigured = Boolean(
     apiConfigured &&
-      env.WHATSAPP_ACCESS_TOKEN?.trim() &&
-      env.WHATSAPP_OTP_TEMPLATE_NAME?.trim() &&
-      env.WHATSAPP_OTP_TEMPLATE_LANGUAGE?.trim(),
+      accessTokenConfigured &&
+      templateNameConfigured &&
+      templateLanguageConfigured,
   );
+  const missing = [
+    !appSecretConfigured && "WHATSAPP_APP_SECRET",
+    !verifyTokenConfigured && "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+    !apiConfigured && "WHATSAPP_API_VERSION o WHATSAPP_PHONE_NUMBER_ID",
+    !accessTokenConfigured && "WHATSAPP_ACCESS_TOKEN",
+    !templateNameConfigured && "WHATSAPP_OTP_TEMPLATE_NAME",
+    !templateLanguageConfigured && "WHATSAPP_OTP_TEMPLATE_LANGUAGE",
+  ].filter((value): value is string => Boolean(value));
 
   let eventStoreReady = false;
   let eventCount = 0;
@@ -42,6 +53,7 @@ export async function GET() {
   return Response.json({
     configured: appSecretConfigured && verifyTokenConfigured && apiConfigured,
     otpConfigured,
+    missing,
     eventStoreReady,
     eventCount,
     lastReceivedAt,

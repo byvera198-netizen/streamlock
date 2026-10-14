@@ -25,29 +25,35 @@ export function isWhatsAppOtpRequired() {
 export async function sendWhatsAppOtp(to: string, code: string) {
   const config = getWhatsAppConfig();
   if (!config) return { configured: false as const };
-  const response = await fetch(`https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}/messages`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: to.replace(/^\+/, ""),
-      type: "template",
-      template: {
-        name: config.templateName,
-        language: { code: config.templateLanguage },
-        components: [{ type: "body", parameters: [{ type: "text", text: code }] }],
+  try {
+    const response = await fetch(`https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.accessToken}`,
+        "Content-Type": "application/json",
       },
-    }),
-  });
-  if (!response.ok) {
-    const detail = await response.text();
-    console.error("WhatsApp Cloud API error", response.status, detail.slice(0, 500));
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: to.replace(/^\+/, ""),
+        type: "template",
+        template: {
+          name: config.templateName,
+          language: { code: config.templateLanguage },
+          components: [{ type: "body", parameters: [{ type: "text", text: code }] }],
+        },
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      console.error("WhatsApp Cloud API error", response.status, detail.slice(0, 500));
+      return { configured: true as const, sent: false as const };
+    }
+    return { configured: true as const, sent: true as const };
+  } catch (error) {
+    console.error("WhatsApp Cloud API request failed", error instanceof Error ? error.name : "unknown");
     return { configured: true as const, sent: false as const };
   }
-  return { configured: true as const, sent: true as const };
 }
 
 export function normalizeWhatsAppPhone(value: string) {

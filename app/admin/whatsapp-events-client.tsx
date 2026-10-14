@@ -10,6 +10,7 @@ type WhatsAppStatus = {
   eventCount: number;
   lastReceivedAt: string | null;
   phoneNumberIdLast4: string | null;
+  missing: string[];
 };
 
 export default function AdminWhatsAppEventsClient() {
@@ -32,6 +33,7 @@ export default function AdminWhatsAppEventsClient() {
       eventCount: typeof payload.eventCount === "number" ? payload.eventCount : 0,
       lastReceivedAt: typeof payload.lastReceivedAt === "string" ? payload.lastReceivedAt : null,
       phoneNumberIdLast4: typeof payload.phoneNumberIdLast4 === "string" ? payload.phoneNumberIdLast4 : null,
+      missing: Array.isArray(payload.missing) ? payload.missing.filter((item: unknown): item is string => typeof item === "string") : [],
     });
     setMessage("");
   }
@@ -61,7 +63,8 @@ export default function AdminWhatsAppEventsClient() {
           <p className="kicker">SEGURIDAD</p>
           <h2>{status.configured ? "Webhook protegido" : "Configuración incompleta"}</h2>
           <p>Firma HMAC y token de verificación: <b>{status.configured ? "Activos" : "Revisar variables"}</b></p>
-          <p>Plantilla OTP de Meta: <b>{status.otpConfigured ? "Lista" : "Pendiente de aprobación"}</b></p>
+          <p>Plantilla OTP de Meta: <b>{status.otpConfigured ? "Lista" : "Pendiente de configuración/aprobación"}</b></p>
+          {status.missing.length > 0 && <p>Variables pendientes: <b>{status.missing.join(", ")}</b></p>}
           <p>El checkout bancario y las notificaciones dentro de StreamLock no dependen de esta integración.</p>
         </div>
         <div className="admin-actions"><button onClick={() => void load()}>Actualizar estado</button></div>

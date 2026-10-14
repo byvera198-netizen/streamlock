@@ -7,9 +7,10 @@ import AdminBankAccountsClient from "./bank-accounts-client";
 import AdminStoresClient from "./stores-client";
 import AdminWhatsAppEventsClient from "./whatsapp-events-client";
 import AdminPaymentMethodsClient from "./payment-methods-client";
+import AdminPayoutAccountsClient from "./payout-accounts-client";
 
 export const dynamic = "force-dynamic";
 
 export default function AdminPage() {
-  return <><AdminTransfersClient /><AdminBankAccountsClient /><AdminProfilesClient /><AdminStoresClient /><AdminDisputesClient /><AdminDeliveriesClient /><AdminWithdrawalsClient /><AdminWhatsAppEventsClient /><AdminPaymentMethodsClient /></>;
+  return <><AdminTransfersClient /><AdminBankAccountsClient /><AdminProfilesClient /><AdminPayoutAccountsClient /><AdminStoresClient /><AdminDisputesClient /><AdminDeliveriesClient /><AdminWithdrawalsClient /><AdminWhatsAppEventsClient /><AdminPaymentMethodsClient /></>;
 }

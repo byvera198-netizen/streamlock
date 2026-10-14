@@ -17,8 +17,20 @@ async function requireAdmin() {
 export async function GET() {
   const access = await requireAdmin();
   if ("response" in access) return access.response;
-  const profiles = await getDb().select().from(userProfiles).where(eq(userProfiles.status, "pending_review")).orderBy(desc(userProfiles.updatedAt));
-  return Response.json({ profiles });
+  const profiles = await getDb().select({
+    userId: userProfiles.userId,
+    legalName: userProfiles.legalName,
+    idLast4: userProfiles.idLast4,
+    phone: userProfiles.phone,
+    address: userProfiles.address,
+    identityDocumentType: userProfiles.identityDocumentType,
+    identityDocumentSubmittedAt: userProfiles.identityDocumentSubmittedAt,
+    hasIdentityDocument: userProfiles.identityDocumentKey,
+    status: userProfiles.status,
+    updatedAt: userProfiles.updatedAt,
+  }).from(userProfiles).where(eq(userProfiles.status, "pending_review")).orderBy(desc(userProfiles.updatedAt));
+  const safeProfiles = profiles.map(({ hasIdentityDocument, ...profile }) => ({ ...profile, hasIdentityDocument: Boolean(hasIdentityDocument) }));
+  return Response.json({ profiles: safeProfiles });
 }
 
 export async function POST(request: Request) {
@@ -30,6 +42,7 @@ export async function POST(request: Request) {
   const db = getDb();
   const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId)).limit(1);
   if (!profile) return Response.json({ error: "Perfil no encontrado." }, { status: 404 });
+  if (body.decision === "approve" && !profile.identityDocumentKey) return Response.json({ error: "No se puede aprobar un perfil sin documento de identidad." }, { status: 400 });
   const status = body.decision === "approve" ? "approved" : "rejected";
   await db.update(userProfiles).set({ status, updatedAt: new Date().toISOString() }).where(eq(userProfiles.userId, userId));
   await createNotification(db, {

@@ -22,6 +22,22 @@ export const userProfiles = sqliteTable("user_profiles", {
   phoneVerificationAttempts: integer("phone_verification_attempts").notNull().default(0),
   phoneVerifiedAt: text("phone_verified_at"),
   address: text("address").notNull(),
+  identityDocumentKey: text("identity_document_key"),
+  identityDocumentType: text("identity_document_type"),
+  identityDocumentSubmittedAt: text("identity_document_submitted_at"),
+  status: text("status").notNull().default("pending_review"),
+  createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
+  updatedAt: text("updated_at").notNull().default("CURRENT_TIMESTAMP"),
+});
+
+export const payoutAccounts = sqliteTable("payout_accounts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ownerId: text("owner_id").notNull(),
+  bankName: text("bank_name").notNull(),
+  accountType: text("account_type").notNull(),
+  accountHolderName: text("account_holder_name").notNull(),
+  accountNumberCiphertext: text("account_number_ciphertext").notNull(),
+  accountNumberLast4: text("account_number_last4").notNull(),
   status: text("status").notNull().default("pending_review"),
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
   updatedAt: text("updated_at").notNull().default("CURRENT_TIMESTAMP"),

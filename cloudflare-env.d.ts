@@ -8,6 +8,7 @@ declare namespace Cloudflare {
     RESEND_API_KEY?: string;
     STREAMLOCK_EMAIL_FROM?: string;
     ACCESS_SESSION_SECRET?: string;
+    KYC_DATA_ENCRYPTION_KEY?: string;
     WHATSAPP_API_VERSION?: string;
     WHATSAPP_PHONE_NUMBER_ID?: string;
     WHATSAPP_ACCESS_TOKEN?: string;

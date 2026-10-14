@@ -116,6 +116,21 @@ const checks = [
     expected: (response) => response.status === 403,
   },
   {
+    name: "documentos KYC protegidos",
+    request: () => fetch(`${baseUrl}/api/admin/profiles/document?userId=unknown`),
+    expected: (response) => response.status === 403,
+  },
+  {
+    name: "cuentas de retiro privadas",
+    request: () => fetch(`${baseUrl}/api/profile/payout-account`),
+    expected: (response) => response.status === 401,
+  },
+  {
+    name: "revisión de cuentas de retiro protegida",
+    request: () => fetch(`${baseUrl}/api/admin/payout-accounts`),
+    expected: (response) => response.status === 403,
+  },
+  {
     name: "catálogo privado",
     request: () => fetch(`${baseUrl}/api/products`),
     expected: (response) => response.status === 401,

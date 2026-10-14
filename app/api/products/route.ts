@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { getDb } from "../../../db";
 import { products, stores, userProfiles } from "../../../db/schema";
@@ -7,10 +7,27 @@ import { createPublicProductCode } from "../../product-code";
 export async function GET() {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "Inicia sesión para ver tus productos." }, { status: 401 });
-  const rows = await getDb().select({ product: products, store: stores }).from(products)
+  const db = getDb();
+  const rows = await db.select({ product: products, store: stores }).from(products)
     .innerJoin(stores, eq(products.storeId, stores.id)).where(eq(stores.ownerId, user.userId))
     .orderBy(desc(products.id));
-  return Response.json({ products: rows.map((row) => row.product) });
+  const ownedProducts = [];
+  for (const row of rows) {
+    let product = row.product;
+    if (!product.publicCode) {
+      for (let attempt = 0; attempt < 4 && !product.publicCode; attempt += 1) {
+        try {
+          const [updated] = await db.update(products).set({ publicCode: createPublicProductCode() })
+            .where(and(eq(products.id, product.id), sql`${products.publicCode} IS NULL`)).returning();
+          if (updated?.publicCode) product = updated;
+        } catch {
+          // Regenerate on the unlikely event of a unique-code collision.
+        }
+      }
+    }
+    ownedProducts.push(product);
+  }
+  return Response.json({ products: ownedProducts });
 }
 
 export async function POST(request: Request) {

@@ -18,8 +18,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ produ
   const body = await request.json() as { title?: string; description?: string; category?: string; brand?: string; model?: string; storage?: string | null; color?: string | null; condition?: string; warrantyMonths?: number; price?: number; stock?: number; saleMode?: "store" | "live"; expiresAt?: string | null; status?: "draft" | "published" };
   const nextStatus = body.status ?? current.product.status;
   if (nextStatus !== "draft" && nextStatus !== "published") return Response.json({ error: "El estado del producto no es válido." }, { status: 400 });
-  const [profile] = await getDb().select({ status: userProfiles.status }).from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);
-  if (nextStatus === "published" && (!profile || profile.status !== "approved")) return Response.json({ error: "Aprueba tu perfil KYC antes de publicar productos.", code: "PROFILE_NOT_APPROVED" }, { status: 409 });
+  const [profile] = await getDb().select({ status: userProfiles.status, accountType: userProfiles.accountType }).from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);
+  if (!profile || profile.status !== "approved") return Response.json({ error: "Aprueba tu perfil KYC antes de editar o publicar productos.", code: "PROFILE_NOT_APPROVED" }, { status: 409 });
+  if (profile.accountType !== "seller" && profile.accountType !== "both") return Response.json({ error: "Tu cuenta no tiene habilitado el modo vendedor. Cambia la modalidad desde Perfil protegido.", code: "SELLER_ROLE_REQUIRED" }, { status: 409 });
   const title = body.title === undefined ? current.product.title : body.title.trim();
   const description = body.description === undefined ? current.product.description : body.description.trim();
   const category = body.category === undefined ? current.product.category : body.category.trim();

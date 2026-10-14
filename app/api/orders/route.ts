@@ -31,6 +31,7 @@ export async function POST(request: Request) {
   const deliveryMethod = body.deliveryMethod === "pickup" ? "pickup" : "courier";
   const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, buyer.userId)).limit(1);
   if (!profile) return Response.json({ error: "Completa tu perfil de identidad y despacho antes de comprar.", code: "PROFILE_REQUIRED" }, { status: 409 });
+  if (profile.accountType !== "buyer" && profile.accountType !== "both") return Response.json({ error: "Tu cuenta está configurada como Vendedor. Cambia a Cliente comprador o Cliente y vendedor desde Perfil protegido para comprar.", code: "BUYER_ROLE_REQUIRED" }, { status: 409 });
   if (profile.status !== "approved") {
     const message = profile.status === "rejected" ? "Tu perfil fue rechazado. Actualiza tus datos para solicitar una nueva revisión." : "Tu perfil está pendiente de revisión administrativa. Podrás comprar cuando sea aprobado.";
     return Response.json({ error: message, code: "PROFILE_NOT_APPROVED", status: profile.status }, { status: 409 });

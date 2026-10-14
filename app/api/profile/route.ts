@@ -2,7 +2,10 @@ import { eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { getDb } from "../../../db";
-import { userProfiles } from "../../../db/schema";
+import { stores, userProfiles } from "../../../db/schema";
+
+const accountTypes = new Set(["buyer", "seller", "both"]);
+const activeModes = new Set(["buyer", "seller"]);
 
 function normalizeId(value: string) {
   return value.replace(/[^0-9A-Za-z]/g, "").toUpperCase();
@@ -19,6 +22,8 @@ async function hashIdentity(value: string) {
 
 function safeProfile(profile: typeof userProfiles.$inferSelect) {
   return {
+    accountType: profile.accountType,
+    activeMode: profile.activeMode,
     legalName: profile.legalName,
     idLast4: profile.idLast4,
     phone: profile.phone,
@@ -48,12 +53,18 @@ export async function POST(request: Request) {
   const form = isMultipart ? await request.formData() : null;
   const body = isMultipart ? {
     legalName: form?.get("legalName"),
+    accountType: form?.get("accountType"),
+    activeMode: form?.get("activeMode"),
     idNumber: form?.get("idNumber"),
     phone: form?.get("phone"),
     address: form?.get("address"),
     identityDocument: form?.get("identityDocument"),
   } : { ...(await request.json() as Record<string, unknown>), identityDocument: null };
   const legalName = typeof body.legalName === "string" ? body.legalName.trim().replace(/\s+/g, " ") : "";
+  const requestedAccountType = typeof body.accountType === "string" ? body.accountType : existing?.accountType ?? "buyer";
+  const accountType = accountTypes.has(requestedAccountType) ? requestedAccountType : "buyer";
+  const requestedActiveMode = typeof body.activeMode === "string" ? body.activeMode : existing?.activeMode ?? "buyer";
+  const activeMode = activeModes.has(requestedActiveMode) && (requestedActiveMode === "buyer" || accountType !== "buyer") ? requestedActiveMode : "buyer";
   const idNumber = normalizeId(typeof body.idNumber === "string" ? body.idNumber.trim() : "");
   const phone = normalizePhone(typeof body.phone === "string" ? body.phone.trim() : "");
   const address = typeof body.address === "string" ? body.address.trim().replace(/\s+/g, " ") : "";
@@ -73,6 +84,14 @@ export async function POST(request: Request) {
     return Response.json({ error: "El almacenamiento seguro de documentos aún no está disponible." }, { status: 503 });
   }
 
+  if (accountType === "buyer" && requestedActiveMode === "seller") {
+    return Response.json({ error: "Una cuenta de cliente comprador no puede activar el modo vendedor." }, { status: 400 });
+  }
+  if (accountType === "buyer") {
+    const [ownedStore] = await db.select({ id: stores.id }).from(stores).where(eq(stores.ownerId, user.userId)).limit(1);
+    if (ownedStore) return Response.json({ error: "Esta cuenta ya tiene una vitrina. Selecciona Cliente y vendedor para conservar el acceso a tu negocio." }, { status: 409 });
+  }
+
   const now = new Date().toISOString();
   const phoneChanged = existing ? existing.phone !== phone : true;
   let identityDocumentKey = existing?.identityDocumentKey ?? null;
@@ -85,7 +104,7 @@ export async function POST(request: Request) {
     identityDocumentSubmittedAt = now;
     await env.RECEIPTS.put(identityDocumentKey, identityDocument.stream(), { httpMetadata: { contentType: identityDocument.type } });
   }
-  const values = { userId: user.userId, legalName, idNumberHash: idNumber ? await hashIdentity(idNumber) : existing?.idNumberHash ?? "", idLast4: idNumber ? idNumber.slice(-4) : existing?.idLast4 ?? "", phone, phoneVerifiedAt: phoneChanged ? null : existing?.phoneVerifiedAt ?? null, phoneVerificationCodeHash: phoneChanged ? null : existing?.phoneVerificationCodeHash ?? null, phoneVerificationExpiresAt: phoneChanged ? null : existing?.phoneVerificationExpiresAt ?? null, phoneVerificationLastSentAt: phoneChanged ? null : existing?.phoneVerificationLastSentAt ?? null, phoneVerificationAttempts: phoneChanged ? 0 : existing?.phoneVerificationAttempts ?? 0, address, identityDocumentKey, identityDocumentType, identityDocumentSubmittedAt, status: "pending_review", updatedAt: now };
+  const values = { userId: user.userId, accountType, activeMode, legalName, idNumberHash: idNumber ? await hashIdentity(idNumber) : existing?.idNumberHash ?? "", idLast4: idNumber ? idNumber.slice(-4) : existing?.idLast4 ?? "", phone, phoneVerifiedAt: phoneChanged ? null : existing?.phoneVerifiedAt ?? null, phoneVerificationCodeHash: phoneChanged ? null : existing?.phoneVerificationCodeHash ?? null, phoneVerificationExpiresAt: phoneChanged ? null : existing?.phoneVerificationExpiresAt ?? null, phoneVerificationLastSentAt: phoneChanged ? null : existing?.phoneVerificationLastSentAt ?? null, phoneVerificationAttempts: phoneChanged ? 0 : existing?.phoneVerificationAttempts ?? 0, address, identityDocumentKey, identityDocumentType, identityDocumentSubmittedAt, status: "pending_review", updatedAt: now };
   const [profile] = existing
     ? await db.update(userProfiles).set(values).where(eq(userProfiles.userId, user.userId)).returning()
     : await db.insert(userProfiles).values(values).returning();

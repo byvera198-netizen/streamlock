@@ -51,8 +51,9 @@ export async function POST(request: Request) {
   const owned = await getDb().select({ id: stores.id }).from(stores).where(and(eq(stores.id, body.storeId), eq(stores.ownerId, user.userId))).limit(1);
   if (!owned.length) return Response.json({ error: "El negocio no pertenece a esta cuenta." }, { status: 403 });
   const status = body.status === "published" ? "published" : "draft";
-  const [profile] = await getDb().select({ status: userProfiles.status }).from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);
-  if (status === "published" && (!profile || profile.status !== "approved")) return Response.json({ error: "Aprueba tu perfil KYC antes de publicar productos.", code: "PROFILE_NOT_APPROVED" }, { status: 409 });
+  const [profile] = await getDb().select({ status: userProfiles.status, accountType: userProfiles.accountType }).from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);
+  if (!profile || profile.status !== "approved") return Response.json({ error: "Aprueba tu perfil KYC antes de crear o publicar productos.", code: "PROFILE_NOT_APPROVED" }, { status: 409 });
+  if (profile.accountType !== "seller" && profile.accountType !== "both") return Response.json({ error: "Tu cuenta no tiene habilitado el modo vendedor. Cambia la modalidad desde Perfil protegido.", code: "SELLER_ROLE_REQUIRED" }, { status: 409 });
   const saleMode = body.saleMode === "live" ? "live" : "store";
   const expiresAt = saleMode === "live" ? (body.expiresAt ? new Date(body.expiresAt).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()) : null;
   if (saleMode === "live" && (!expiresAt || Date.parse(expiresAt) <= Date.now())) return Response.json({ error: "La publicación Live debe tener una fecha futura." }, { status: 400 });

@@ -12,6 +12,8 @@ export const stores = sqliteTable("stores", {
 
 export const userProfiles = sqliteTable("user_profiles", {
   userId: text("user_id").primaryKey(),
+  accountType: text("account_type").notNull().default("buyer"),
+  activeMode: text("active_mode").notNull().default("buyer"),
   legalName: text("legal_name").notNull(),
   idNumberHash: text("id_number_hash").notNull(),
   idLast4: text("id_last4").notNull(),

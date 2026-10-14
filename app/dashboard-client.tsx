@@ -7,7 +7,7 @@ import ProductCodeSearch from "./components/product-code-search";
 import { readJson } from "../lib/client-json";
 
 type Store = { id: number; name: string; slug: string; socialNetwork: string; status: string };
-type Product = { id: number; title: string; description: string; category: string; brand: string; model: string; storage: string | null; color: string | null; condition: string; warrantyMonths: number; priceCents: number; stock: number; status: string; saleMode: string; expiresAt: string | null; publicCode: string | null };
+type Product = { id: number; title: string; description: string; category: string; brand: string; model: string; storage: string | null; color: string | null; condition: string; warrantyMonths: number; priceCents: number; stock: number; status: string; saleMode: string; expiresAt: string | null; publicCode: string | null; imageUrl?: string | null };
 type SellerOrder = { id: number; totalCents: number; status: string; deliveryMethod: string; quantity: number; product: Product; delivery: { method: string; carrier: string | null; trackingCode: string | null; status: string; pickupPin: string | null } | null };
 type SellerBalance = { availableCents: number; totalEarnedCents: number };
 type PayoutAccount = { id: number; bankName: string; accountType: string; accountHolderName: string; accountNumberLast4: string; status: string };
@@ -25,14 +25,14 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
   const [network, setNetwork] = useState("Instagram");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [product, setProduct] = useState({ title: "", description: "", category: "mobile", brand: "", model: "", storage: "", color: "", condition: "new", warrantyMonths: "", price: "", stock: "", imageUrl: "", saleMode: "store", expiresAt: "" });
+  const [product, setProduct] = useState({ title: "", description: "", category: "mobile", brand: "", model: "", storage: "", color: "", condition: "new", warrantyMonths: "", price: "", stock: "", imageUrl: "", saleMode: "store", expiresAt: "", status: "draft" });
   const [productImage, setProductImage] = useState<File | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
   const [profileName, setProfileName] = useState("");
   const [productMessage, setProductMessage] = useState("");
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
-  const [productEdits, setProductEdits] = useState<Record<number, { title: string; description: string; category: string; brand: string; model: string; storage: string; color: string; condition: string; warrantyMonths: string; price: string; stock: string; saleMode: string; expiresAt: string }>>({});
+  const [productEdits, setProductEdits] = useState<Record<number, { title: string; description: string; category: string; brand: string; model: string; storage: string; color: string; condition: string; warrantyMonths: string; price: string; stock: string; saleMode: string; expiresAt: string; status: string }>>({});
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [ordersMessage, setOrdersMessage] = useState("");
   const [courier, setCourier] = useState<Record<number, { carrier: string; trackingCode: string }>>({});
@@ -54,7 +54,7 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
     }
     if (productsResponse.ok) {
       const payload = await readJson(productsResponse);
-      setProducts((payload.products ?? []).filter((item: Product) => item.status === "published"));
+      setProducts(payload.products ?? []);
     }
     if (profileResponse.ok) {
       const payload = await readJson(profileResponse);
@@ -121,10 +121,10 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
       if (!imageResponse.ok) { setProductMessage(imagePayload.error ?? "No se pudo subir la imagen."); return; }
       imageUrl = imagePayload.imageUrl;
     }
-    const response = await fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storeId: store.id, ...product, warrantyMonths: Number(product.warrantyMonths || 0), imageUrl }) });
+    const response = await fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storeId: store.id, ...product, status: product.status, warrantyMonths: Number(product.warrantyMonths || 0), imageUrl }) });
     const payload = await readJson(response);
     if (!response.ok) { setProductMessage(payload.error ?? "No se pudo publicar el producto."); return; }
-    setProducts((current) => [payload.product, ...current]); setProduct({ title: "", description: "", category: "mobile", brand: "", model: "", storage: "", color: "", condition: "new", warrantyMonths: "", price: "", stock: "", imageUrl: "", saleMode: "store", expiresAt: "" }); setProductImage(null); setProductMessage(product.saleMode === "live" ? "Venta Live publicada por 24 horas." : "Producto publicado en tu vitrina.");
+    setProducts((current) => [payload.product, ...current]); setProduct({ title: "", description: "", category: "mobile", brand: "", model: "", storage: "", color: "", condition: "new", warrantyMonths: "", price: "", stock: "", imageUrl: "", saleMode: "store", expiresAt: "", status: "draft" }); setProductImage(null); setProductMessage(product.status === "draft" ? "Borrador guardado. Verifica precio, foto y stock antes de publicarlo." : product.saleMode === "live" ? "Venta Live publicada por 24 horas." : "Producto publicado en tu vitrina.");
   }
 
   async function requestWithdrawal(event: FormEvent<HTMLFormElement>) {
@@ -141,10 +141,17 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
     const price = Number(edit.price);
     const warrantyMonths = Number(edit.warrantyMonths || 0);
     if (!edit.title.trim() || edit.title.trim().length < 2 || edit.description.length > 2000 || !Number.isFinite(price) || price <= 0 || !Number.isInteger(stock) || stock < 0 || !Number.isInteger(warrantyMonths) || warrantyMonths < 0 || warrantyMonths > 120) { setProductMessage("Completa nombre, descripción, precio, stock y garantía con valores válidos."); return; }
-    const response = await fetch(`/api/products/${productId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: edit.title, description: edit.description, category: edit.category, brand: edit.brand, model: edit.model, storage: edit.storage || null, color: edit.color || null, condition: edit.condition, warrantyMonths, price, stock, saleMode: edit.saleMode, expiresAt: edit.expiresAt || null }) });
+    const response = await fetch(`/api/products/${productId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: edit.title, description: edit.description, category: edit.category, brand: edit.brand, model: edit.model, storage: edit.storage || null, color: edit.color || null, condition: edit.condition, warrantyMonths, price, stock, saleMode: edit.saleMode, expiresAt: edit.expiresAt || null, status: edit.status }) });
     const payload = await readJson(response);
     setProductMessage(response.ok ? "Producto actualizado." : payload.error ?? "No se pudo actualizar el producto.");
     if (response.ok) { setProducts(current => current.map(item => item.id === productId ? payload.product : item)); setEditingProductId(null); setProductEdits(current => { const next = { ...current }; delete next[productId]; return next; }); }
+  }
+
+  async function publishProduct(item: Product) {
+    const response = await fetch(`/api/products/${item.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "published" }) });
+    const payload = await readJson(response);
+    setProductMessage(response.ok ? `“${item.title}” ya está publicado y listo para compartir.` : payload.error ?? "No se pudo publicar el producto.");
+    if (response.ok) setProducts(current => current.map(product => product.id === item.id ? payload.product : product));
   }
 
   async function archiveProduct(item: Product) {
@@ -157,7 +164,7 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
 
   function startEditingProduct(item: Product) {
     setEditingProductId(item.id);
-    setProductEdits(current => ({ ...current, [item.id]: { title: item.title, description: item.description, category: item.category, brand: item.brand, model: item.model, storage: item.storage ?? "", color: item.color ?? "", condition: item.condition, warrantyMonths: String(item.warrantyMonths), price: (item.priceCents / 100).toFixed(2), stock: String(item.stock), saleMode: item.saleMode, expiresAt: item.expiresAt ? new Date(item.expiresAt).toISOString().slice(0, 16) : "" } }));
+    setProductEdits(current => ({ ...current, [item.id]: { title: item.title, description: item.description, category: item.category, brand: item.brand, model: item.model, storage: item.storage ?? "", color: item.color ?? "", condition: item.condition, warrantyMonths: String(item.warrantyMonths), price: (item.priceCents / 100).toFixed(2), stock: String(item.stock), saleMode: item.saleMode, expiresAt: item.expiresAt ? new Date(item.expiresAt).toISOString().slice(0, 16) : "", status: item.status } }));
     setProductMessage("");
   }
 
@@ -203,12 +210,13 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
 
   const accountName = profileName || user.displayName || user.email;
   const accountRole = store ? "Vendedor y comprador" : "Comprador";
-  const productSharePanel = store && products.length > 0 ? <ProductSharePanel products={products} onCopy={copyProductCode} onShare={shareProduct} /> : null;
+  const publishedProducts = products.filter(item => item.status === "published");
+  const productSharePanel = store && publishedProducts.length > 0 ? <ProductSharePanel products={publishedProducts} onCopy={copyProductCode} onShare={shareProduct} /> : null;
 
   return <main className="dashboard-shell">
     {productSharePanel}
     <nav className="dashboard-nav"><Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.png" alt="StreamLock" /></Link><span>Centro de negocios</span><Link href="/my-orders" prefetch={false}>Mis compras</Link><Link href="/profile" prefetch={false}>Perfil protegido</Link>{user ? <a href={signOutHref} target="_top" rel="noreferrer" className="account-link"><span className="account-name">{accountName}</span><small className="account-role">{accountRole}</small><span className="account-logout">· Cerrar sesión</span></a> : <a href={signInHref} target="_top" rel="noreferrer" className="account-link">Iniciar sesión</a>}</nav>
-    <section className="dashboard-hero"><div><p className="kicker">PARA NEGOCIOS · PERFIL VERIFICADO</p><h1>Vende con respaldo<br /><em>en cada live.</em></h1><p className="lead">Crea tu negocio, publica tu catálogo y comparte el código de cada producto con tu audiencia.</p><ProductCodeSearch />{store && products.length > 0 && <div className="product-code-mini"><b>Códigos listos para compartir</b>{products.map(item => <span key={item.id}>{item.title} · <strong>{item.publicCode ?? "pendiente"}</strong></span>)}</div>}</div><div className="trust-card"><span>01</span><b>Datos del negocio</b><small>Necesarios para iniciar la verificación.</small><div className="progress"><i /></div><p>1 de 4 pasos</p></div></section>
+    <section className="dashboard-hero"><div><p className="kicker">PARA NEGOCIOS · PERFIL VERIFICADO</p><h1>Vende con respaldo<br /><em>en cada live.</em></h1><p className="lead">Crea tu negocio, publica tu catálogo y comparte el código de cada producto con tu audiencia.</p><ProductCodeSearch />{store && publishedProducts.length > 0 && <div className="product-code-mini"><b>Códigos listos para compartir</b>{publishedProducts.map(item => <span key={item.id}>{item.title} · <strong>{item.publicCode ?? "pendiente"}</strong></span>)}</div>}</div><div className="trust-card"><span>01</span><b>Datos del negocio</b><small>Necesarios para iniciar la verificación.</small><div className="progress"><i /></div><p>1 de 4 pasos</p></div></section>
     <section className="onboarding-grid"><form onSubmit={createStore} className="store-form"><h2>Cuéntanos sobre tu negocio</h2><p>Este nombre aparecerá en tu vitrina y enlaces de venta.</p><label>Nombre comercial<input value={name} onChange={e => setName(e.target.value)} placeholder="Ej. Casa Morena" required minLength={3} /></label><label>Red social principal<select value={network} onChange={e => setNetwork(e.target.value)}><option>Instagram</option><option>TikTok</option><option>Facebook</option><option>WhatsApp</option></select></label><button disabled={loading}>{loading ? "Creando…" : "Crear mi vitrina →"}</button>{message && <output>{message}</output>}</form>
       <aside className="preview-card"><p className="kicker">VISTA PREVIA</p><div className="store-preview"><div className="preview-cover" /><div className="preview-avatar">{name ? name.slice(0,2).toUpperCase() : "TU"}</div><h3>{name || "Tu negocio"} <span>{store?.status === "verified" ? "✓" : "•"}</span></h3><p>{network} · {store?.status === "verified" ? "Vitrina verificada" : store?.status === "rejected" ? "Requiere actualización" : "Pendiente de verificación"}</p><div className="preview-line" /><div className="preview-line short" /></div>{store && <div className="created-store"><b>/{store.slug}</b><span>{store.status === "verified" ? "Vitrina verificada" : "Vitrina creada"}</span></div>}</aside>
     </section>

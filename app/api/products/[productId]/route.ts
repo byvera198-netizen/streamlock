@@ -15,10 +15,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ produ
   if (!Number.isInteger(productId)) return Response.json({ error: "Producto inválido." }, { status: 400 });
   const current = await getOwnedProduct(productId, user.userId);
   if (!current) return Response.json({ error: "Producto no encontrado." }, { status: 404 });
-  if (current.product.status !== "published") return Response.json({ error: "Este producto ya no está activo." }, { status: 409 });
+  const body = await request.json() as { title?: string; description?: string; category?: string; brand?: string; model?: string; storage?: string | null; color?: string | null; condition?: string; warrantyMonths?: number; price?: number; stock?: number; saleMode?: "store" | "live"; expiresAt?: string | null; status?: "draft" | "published" };
+  const nextStatus = body.status ?? current.product.status;
+  if (nextStatus !== "draft" && nextStatus !== "published") return Response.json({ error: "El estado del producto no es válido." }, { status: 400 });
   const [profile] = await getDb().select({ status: userProfiles.status }).from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);
-  if (!profile || profile.status !== "approved") return Response.json({ error: "Aprueba tu perfil KYC antes de editar productos.", code: "PROFILE_NOT_APPROVED" }, { status: 409 });
-  const body = await request.json() as { title?: string; description?: string; category?: string; brand?: string; model?: string; storage?: string | null; color?: string | null; condition?: string; warrantyMonths?: number; price?: number; stock?: number; saleMode?: "store" | "live"; expiresAt?: string | null };
+  if (nextStatus === "published" && (!profile || profile.status !== "approved")) return Response.json({ error: "Aprueba tu perfil KYC antes de publicar productos.", code: "PROFILE_NOT_APPROVED" }, { status: 409 });
   const title = body.title === undefined ? current.product.title : body.title.trim();
   const description = body.description === undefined ? current.product.description : body.description.trim();
   const category = body.category === undefined ? current.product.category : body.category.trim();
@@ -40,7 +41,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ produ
     if (!Number.isFinite(expiryTimestamp) || expiryTimestamp <= Date.now()) return Response.json({ error: "La publicación Live debe tener una fecha futura válida." }, { status: 400 });
     expiresAt = new Date(expiryTimestamp).toISOString();
   }
-  const [updated] = await getDb().update(products).set({ title, description, category, brand, model, storage, color, condition, warrantyMonths, priceCents: Math.round(price * 100), stock, saleMode, expiresAt }).where(eq(products.id, productId)).returning();
+  const [updated] = await getDb().update(products).set({ title, description, category, brand, model, storage, color, condition, warrantyMonths, priceCents: Math.round(price * 100), stock, saleMode, expiresAt, status: nextStatus }).where(eq(products.id, productId)).returning();
   return Response.json({ product: updated });
 }
 

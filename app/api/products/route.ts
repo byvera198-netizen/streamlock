@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "Inicia sesión para publicar productos." }, { status: 401 });
-  const body = await request.json() as { storeId?: number; title?: string; description?: string; category?: string; brand?: string; model?: string; storage?: string; color?: string; condition?: string; warrantyMonths?: number; price?: number; stock?: number; imageUrl?: string; saleMode?: "store" | "live"; expiresAt?: string };
+  const body = await request.json() as { storeId?: number; title?: string; description?: string; category?: string; brand?: string; model?: string; storage?: string; color?: string; condition?: string; warrantyMonths?: number; price?: number; stock?: number; imageUrl?: string; saleMode?: "store" | "live"; expiresAt?: string; status?: "draft" | "published" };
   const title = body.title?.trim() ?? "";
   const description = body.description?.trim() ?? "";
   const category = body.category?.trim() || "general";
@@ -33,11 +33,12 @@ export async function POST(request: Request) {
   }
   const owned = await getDb().select({ id: stores.id }).from(stores).where(and(eq(stores.id, body.storeId), eq(stores.ownerId, user.userId))).limit(1);
   if (!owned.length) return Response.json({ error: "El negocio no pertenece a esta cuenta." }, { status: 403 });
+  const status = body.status === "published" ? "published" : "draft";
   const [profile] = await getDb().select({ status: userProfiles.status }).from(userProfiles).where(eq(userProfiles.userId, user.userId)).limit(1);
-  if (!profile || profile.status !== "approved") return Response.json({ error: "Aprueba tu perfil KYC antes de publicar productos.", code: "PROFILE_NOT_APPROVED" }, { status: 409 });
+  if (status === "published" && (!profile || profile.status !== "approved")) return Response.json({ error: "Aprueba tu perfil KYC antes de publicar productos.", code: "PROFILE_NOT_APPROVED" }, { status: 409 });
   const saleMode = body.saleMode === "live" ? "live" : "store";
   const expiresAt = saleMode === "live" ? (body.expiresAt ? new Date(body.expiresAt).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()) : null;
   if (saleMode === "live" && (!expiresAt || Date.parse(expiresAt) <= Date.now())) return Response.json({ error: "La publicación Live debe tener una fecha futura." }, { status: 400 });
-  const [product] = await getDb().insert(products).values({ storeId: body.storeId, title, description, category, brand, model, storage, color, condition, warrantyMonths, priceCents: Math.round(price * 100), stock, status: "published", imageUrl: body.imageUrl?.trim() || null, saleMode, expiresAt, publicCode: createPublicProductCode() }).returning();
+  const [product] = await getDb().insert(products).values({ storeId: body.storeId, title, description, category, brand, model, storage, color, condition, warrantyMonths, priceCents: Math.round(price * 100), stock, status, imageUrl: body.imageUrl?.trim() || null, saleMode, expiresAt, publicCode: createPublicProductCode() }).returning();
   return Response.json({ product }, { status: 201 });
 }

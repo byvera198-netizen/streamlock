@@ -76,6 +76,11 @@ const checks = [
     expected: (response) => response.status === 403,
   },
   {
+    name: "OTP protegido",
+    request: () => fetch(`${baseUrl}/api/profile/phone-verification/start`, { method: "POST" }),
+    expected: (response) => response.status === 401,
+  },
+  {
     name: "cuentas bancarias públicas",
     request: () => fetch(`${baseUrl}/api/payments/bank-transfer`),
     expected: async (response) => response.status === 200 && (await response.clone().json()).accounts?.length > 0,

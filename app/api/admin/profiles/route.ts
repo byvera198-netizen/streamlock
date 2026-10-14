@@ -4,6 +4,7 @@ import { getDb } from "../../../../db";
 import { createNotification } from "../../../../db/notifications";
 import { userProfiles } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
+import { recordAuditEvent } from "../../../security-guard";
 
 async function requireAdmin() {
   const user = await getChatGPTUser();
@@ -37,5 +38,6 @@ export async function POST(request: Request) {
     title: status === "approved" ? "Perfil aprobado" : "Perfil requiere actualización",
     message: status === "approved" ? "Tu perfil protegido fue aprobado. Ya puedes continuar con tus operaciones." : "Tu perfil protegido requiere revisión. Actualiza tus datos y vuelve a enviarlos.",
   });
+  await recordAuditEvent({ actorId: access.user.userId, action: "admin_profile_review", targetType: "user_profile", targetId: userId, metadata: { decision: body.decision, status } });
   return Response.json({ ok: true, userId, status });
 }

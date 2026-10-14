@@ -3,6 +3,7 @@ import { getChatGPTUser } from "../../../../chatgpt-auth";
 import { getDb } from "../../../../../db";
 import { userProfiles } from "../../../../../db/schema";
 import { getWhatsAppConfig, hashPhoneCode, normalizeWhatsAppPhone, sendWhatsAppOtp } from "../../../../whatsapp";
+import { allowRateLimit } from "../../../../security-guard";
 
 function createCode() {
   const bytes = new Uint32Array(1);
@@ -10,9 +11,10 @@ function createCode() {
   return String(bytes[0] % 1_000_000).padStart(6, "0");
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "Inicia sesión para verificar tu teléfono." }, { status: 401 });
+  if (!(await allowRateLimit(request, "phone-otp", user.userId, 5, 10 * 60 * 1000))) return Response.json({ error: "Demasiadas solicitudes de código. Intenta nuevamente más tarde." }, { status: 429 });
   if (!getWhatsAppConfig()) return Response.json({ error: "La verificación por WhatsApp es opcional y todavía no está disponible. Puedes continuar con tu perfil y tus compras protegidas." }, { status: 503 });
 
   const db = getDb();

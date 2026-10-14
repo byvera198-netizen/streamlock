@@ -4,6 +4,7 @@ import { bankAccounts, bankTransferSubmissions, orders, stores } from "../../../
 import { createNotification } from "../../../../db/notifications";
 import { getChatGPTUser } from "../../../../app/chatgpt-auth";
 import { env } from "cloudflare:workers";
+import { allowRateLimit } from "../../../security-guard";
 
 export async function GET() {
   const accounts = await getDb().select({ id: bankAccounts.slug, bank: bankAccounts.bankName, accountType: bankAccounts.accountType, accountNumber: bankAccounts.accountNumber })
@@ -14,6 +15,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const buyer = await getChatGPTUser();
   if (!buyer) return Response.json({ error: "Inicia sesión para registrar tu comprobante." }, { status: 401 });
+  if (!(await allowRateLimit(request, "bank-receipt", buyer.userId, 10, 60 * 60 * 1000))) return Response.json({ error: "Demasiados intentos de registro. Intenta nuevamente más tarde." }, { status: 429 });
   const isMultipart = request.headers.get("content-type")?.includes("multipart/form-data");
   const form = isMultipart ? await request.formData() : null;
   const body = isMultipart ? { orderId: form?.get("orderId"), bank: form?.get("bank"), reference: form?.get("reference"), receipt: form?.get("receipt") } : { ...(await request.json() as Record<string, unknown>), receipt: null };

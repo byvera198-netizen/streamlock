@@ -70,7 +70,7 @@ const checks = [
   {
     name: "cierre de sesión protegido",
     request: () => fetch(`${baseUrl}/signout-with-chatgpt?return_to=%2F`, { redirect: "manual" }),
-    expected: (response) => response.status === 303 && response.headers.get("location") === "/",
+    expected: (response) => response.status === 303 && response.headers.get("location")?.includes("/cdn-cgi/access/logout"),
   },
   {
     name: "salud D1/R2",

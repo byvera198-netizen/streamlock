@@ -4,11 +4,27 @@ import SupportWhatsApp from "./components/support-whatsapp";
 import Link from "next/link";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://streamlock.profebyron.workers.dev"),
   title: "StreamLock — Negocios verificados",
   description: "Comercio social protegido para vendedores y compradores.",
+  applicationName: "StreamLock",
+  category: "shopping",
   icons: {
     icon: "/streamlock-logo.jpg",
     shortcut: "/streamlock-logo.jpg",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "StreamLock",
+    title: "StreamLock — Comercio social protegido",
+    description: "Compra y vende desde redes sociales con comprobantes, entregas y soporte en un solo lugar.",
+    images: [{ url: "/streamlock-logo.jpg", alt: "StreamLock" }],
+  },
+  twitter: {
+    card: "summary",
+    title: "StreamLock — Comercio social protegido",
+    description: "Compra y vende desde redes sociales con comprobantes, entregas y soporte en un solo lugar.",
+    images: ["/streamlock-logo.jpg"],
   },
 };
 

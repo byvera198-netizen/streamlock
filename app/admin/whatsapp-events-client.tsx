@@ -15,6 +15,8 @@ type WhatsAppStatus = {
 export default function AdminWhatsAppEventsClient() {
   const [status, setStatus] = useState<WhatsAppStatus | null>(null);
   const [message, setMessage] = useState("Cargando estado de WhatsApp…");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
 
   async function load() {
     const response = await fetch("/api/admin/whatsapp-events");
@@ -38,6 +40,15 @@ export default function AdminWhatsAppEventsClient() {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  async function sendEmailTest() {
+    setEmailBusy(true);
+    setEmailMessage("");
+    const response = await fetch("/api/admin/email-test", { method: "POST" });
+    const payload = await readJson(response);
+    setEmailMessage(response.ok ? payload.message ?? "Correo enviado." : payload.error ?? "No se pudo enviar el correo.");
+    setEmailBusy(false);
+  }
 
   return <section className="admin-content admin-disputes">
     <p className="kicker">INTEGRACIONES · WHATSAPP</p>
@@ -63,6 +74,15 @@ export default function AdminWhatsAppEventsClient() {
           <p>Último evento: <b>{status.lastReceivedAt ? new Date(status.lastReceivedAt).toLocaleString() : "—"}</b></p>
         </div>
         <div className="admin-actions"><span>Phone ID · ••••{status.phoneNumberIdLast4 ?? "—"}</span></div>
+      </article>
+      <article className="admin-transfer">
+        <div>
+          <p className="kicker">INTEGRACIÓN · CORREO</p>
+          <h2>Notificaciones administrativas</h2>
+          <p>Envía una prueba controlada al correo administrativo configurado, sin exponer la dirección ni las claves.</p>
+          {emailMessage && <p>{emailMessage}</p>}
+        </div>
+        <div className="admin-actions"><button disabled={emailBusy} onClick={() => void sendEmailTest()}>{emailBusy ? "Enviando…" : "Enviar correo de prueba"}</button></div>
       </article>
     </div>}
   </section>;

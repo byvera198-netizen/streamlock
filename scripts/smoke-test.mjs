@@ -71,6 +71,11 @@ const checks = [
     },
   },
   {
+    name: "prueba de correo protegida",
+    request: () => fetch(`${baseUrl}/api/admin/email-test`, { method: "POST" }),
+    expected: (response) => response.status === 403,
+  },
+  {
     name: "cuentas bancarias públicas",
     request: () => fetch(`${baseUrl}/api/payments/bank-transfer`),
     expected: async (response) => response.status === 200 && (await response.clone().json()).accounts?.length > 0,

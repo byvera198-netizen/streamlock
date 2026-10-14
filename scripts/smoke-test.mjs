@@ -76,6 +76,11 @@ const checks = [
     expected: (response) => response.status === 403,
   },
   {
+    name: "métodos de pago protegidos",
+    request: () => fetch(`${baseUrl}/api/admin/payment-methods`),
+    expected: (response) => response.status === 403,
+  },
+  {
     name: "OTP protegido",
     request: () => fetch(`${baseUrl}/api/profile/phone-verification/start`, { method: "POST" }),
     expected: (response) => response.status === 401,

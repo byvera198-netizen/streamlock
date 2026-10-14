@@ -8,7 +8,7 @@ export async function GET() {
   const seller = await getChatGPTUser();
   if (!seller) return Response.json({ error: "Inicia sesión para consultar tus retiros." }, { status: 401 });
   const db = getDb();
-  const items = await db.select().from(withdrawals).where(eq(withdrawals.ownerId, seller.userId)).orderBy(desc(withdrawals.id)).limit(20);
+  const items = await db.select({ id: withdrawals.id, ownerId: withdrawals.ownerId, payoutAccountId: withdrawals.payoutAccountId, amountCents: withdrawals.amountCents, method: withdrawals.method, destination: withdrawals.destination, transferReference: withdrawals.transferReference, status: withdrawals.status, reviewedAt: withdrawals.reviewedAt, createdAt: withdrawals.createdAt }).from(withdrawals).where(eq(withdrawals.ownerId, seller.userId)).orderBy(desc(withdrawals.id)).limit(20);
   const accounts = await db.select({ id: payoutAccounts.id, bankName: payoutAccounts.bankName, accountType: payoutAccounts.accountType, accountHolderName: payoutAccounts.accountHolderName, accountNumberLast4: payoutAccounts.accountNumberLast4, status: payoutAccounts.status }).from(payoutAccounts).where(and(eq(payoutAccounts.ownerId, seller.userId), eq(payoutAccounts.status, "approved"))).orderBy(desc(payoutAccounts.id));
   return Response.json({ withdrawals: items, payoutAccounts: accounts });
 }

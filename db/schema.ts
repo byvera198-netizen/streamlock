@@ -188,6 +188,8 @@ export const withdrawals = sqliteTable("withdrawals", {
   amountCents: integer("amount_cents").notNull(),
   method: text("method").notNull(),
   destination: text("destination").notNull(),
+  transferReference: text("transfer_reference"),
+  transferProofKey: text("transfer_proof_key"),
   status: text("status").notNull().default("pending_review"),
   reviewedAt: text("reviewed_at"),
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),

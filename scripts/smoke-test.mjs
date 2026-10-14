@@ -171,6 +171,11 @@ const checks = [
     expected: (response) => response.status === 403,
   },
   {
+    name: "comprobantes de retiros protegidos",
+    request: () => fetch(`${baseUrl}/api/admin/withdrawals/proof?withdrawalId=1`),
+    expected: (response) => response.status === 403,
+  },
+  {
     name: "edición de producto protegida",
     request: () => fetch(`${baseUrl}/api/products/1`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "Prueba" }) }),
     expected: (response) => response.status === 401,

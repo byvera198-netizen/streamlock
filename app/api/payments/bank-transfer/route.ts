@@ -50,5 +50,5 @@ export async function POST(request: Request) {
       // La recepción del comprobante no debe fallar si el aviso adicional no está disponible.
     }
   }
-  return Response.json({ submission, message: "Comprobante recibido. La orden queda pendiente de revisión administrativa." }, { status: 201 });
+  return Response.json({ submission, message: "Preorden recibida. El pedido oficial y el aviso al vendedor se generarán cuando administración confirme el depósito." }, { status: 201 });
 }

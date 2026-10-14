@@ -43,6 +43,16 @@ const checks = [
     expected: async (response) => response.status === 200 && (await response.clone().text()).includes("COMPRA PROTEGIDA"),
   },
   {
+    name: "búsqueda pública por código de producto",
+    request: () => fetch(`${baseUrl}/api/products/search?code=SL-000001`),
+    expected: async (response) => { const payload = await response.clone().json(); return response.status === 200 && payload.product?.publicCode === "SL-000001" && payload.checkoutUrl === "/checkout/1"; },
+  },
+  {
+    name: "código inexistente no expone catálogo",
+    request: () => fetch(`${baseUrl}/api/products/search?code=SL-XXXXXX`),
+    expected: (response) => response.status === 404,
+  },
+  {
     name: "referencias públicas de celulares",
     request: () => fetch(`${baseUrl}/mobile-reference`),
     expected: async (response) => { const html = await response.clone().text(); return response.status === 200 && html.includes("Modelos para tu catálogo móvil") && html.includes("Usar como borrador") && html.includes("reference="); },

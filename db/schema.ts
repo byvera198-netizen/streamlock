@@ -45,6 +45,7 @@ export const products = sqliteTable("products", {
   imageUrl: text("image_url"),
   saleMode: text("sale_mode").notNull().default("store"),
   expiresAt: text("expires_at"),
+  publicCode: text("public_code").unique(),
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
 });
 
@@ -64,6 +65,7 @@ export const orders = sqliteTable("orders", {
   shippingPhone: text("shipping_phone"),
   shippingAddress: text("shipping_address"),
   legalAcceptedAt: text("legal_accepted_at"),
+  confirmedAt: text("confirmed_at"),
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
 });
 

@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { getChatGPTUser } from "../../../../app/chatgpt-auth";
 import { getDb } from "../../../../db";
 import { deliveries, orders, products, stores } from "../../../../db/schema";
@@ -10,8 +10,8 @@ export async function GET() {
     .from(orders).innerJoin(stores, eq(orders.storeId, stores.id))
     .innerJoin(products, eq(orders.productId, products.id))
     .leftJoin(deliveries, eq(orders.id, deliveries.orderId))
-    .where(and(eq(stores.ownerId, seller.userId)))
-    .orderBy(desc(orders.id));
+    .where(and(eq(stores.ownerId, seller.userId), isNotNull(orders.confirmedAt)))
+    .orderBy(desc(orders.confirmedAt));
   return Response.json({ orders: rows.map((row) => {
     const revealShipping = ["payment_held", "shipped", "ready_for_pickup", "completed"].includes(row.order.status);
     return { ...row.order, shippingName: revealShipping ? row.order.shippingName : null, shippingPhone: revealShipping ? row.order.shippingPhone : null, shippingAddress: revealShipping ? row.order.shippingAddress : null, product: row.product, delivery: row.delivery };

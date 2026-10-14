@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { getDb } from "../../../db";
 import { products, stores, userProfiles } from "../../../db/schema";
+import { createPublicProductCode } from "../../product-code";
 
 export async function GET() {
   const user = await getChatGPTUser();
@@ -37,6 +38,6 @@ export async function POST(request: Request) {
   const saleMode = body.saleMode === "live" ? "live" : "store";
   const expiresAt = saleMode === "live" ? (body.expiresAt ? new Date(body.expiresAt).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()) : null;
   if (saleMode === "live" && (!expiresAt || Date.parse(expiresAt) <= Date.now())) return Response.json({ error: "La publicación Live debe tener una fecha futura." }, { status: 400 });
-  const [product] = await getDb().insert(products).values({ storeId: body.storeId, title, description, category, brand, model, storage, color, condition, warrantyMonths, priceCents: Math.round(price * 100), stock, status: "published", imageUrl: body.imageUrl?.trim() || null, saleMode, expiresAt }).returning();
+  const [product] = await getDb().insert(products).values({ storeId: body.storeId, title, description, category, brand, model, storage, color, condition, warrantyMonths, priceCents: Math.round(price * 100), stock, status: "published", imageUrl: body.imageUrl?.trim() || null, saleMode, expiresAt, publicCode: createPublicProductCode() }).returning();
   return Response.json({ product }, { status: 201 });
 }

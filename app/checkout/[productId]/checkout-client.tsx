@@ -112,6 +112,12 @@ export default function CheckoutClient({ product, store }: { product: Product; s
         <Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.png" alt="StreamLock" /></Link>
         <span className="secure-label">Checkout protegido · {store.name}</span>
       </header>
+      <section className="checkout-guide" aria-label="Pasos de compra protegida">
+        <div><span>01</span><b>Reserva</b><small>Completa el pedido</small></div>
+        <div><span>02</span><b>Depósito</b><small>Sube el comprobante</small></div>
+        <div><span>03</span><b>Validación</b><small>Administración revisa</small></div>
+        <div><span>04</span><b>Entrega</b><small>Confirma recepción</small></div>
+      </section>
       <section className="checkout-card">
         <div className="checkout-product">
           <div className="checkout-image">{productImage ? <img src={productImage} alt={product.title} /> : product.title.slice(0, 1).toUpperCase()}</div>

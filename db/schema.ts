@@ -184,6 +184,7 @@ export const balanceTransactions = sqliteTable("balance_transactions", {
 export const withdrawals = sqliteTable("withdrawals", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   ownerId: text("owner_id").notNull(),
+  payoutAccountId: integer("payout_account_id").references(() => payoutAccounts.id),
   amountCents: integer("amount_cents").notNull(),
   method: text("method").notNull(),
   destination: text("destination").notNull(),

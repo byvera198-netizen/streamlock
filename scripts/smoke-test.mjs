@@ -161,6 +161,16 @@ const checks = [
     expected: (response) => response.status === 401,
   },
   {
+    name: "retiros vendedor privados",
+    request: () => fetch(`${baseUrl}/api/seller/withdrawals`),
+    expected: (response) => response.status === 401,
+  },
+  {
+    name: "revisión de retiros protegida",
+    request: () => fetch(`${baseUrl}/api/admin/withdrawals`),
+    expected: (response) => response.status === 403,
+  },
+  {
     name: "edición de producto protegida",
     request: () => fetch(`${baseUrl}/api/products/1`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "Prueba" }) }),
     expected: (response) => response.status === 401,

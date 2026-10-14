@@ -1,7 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { getDb } from "../../../../db";
-import { balanceTransactions, sellerBalances, withdrawals } from "../../../../db/schema";
+import { balanceTransactions, payoutAccounts, sellerBalances, withdrawals } from "../../../../db/schema";
 import { createNotification } from "../../../../db/notifications";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 
@@ -16,7 +16,7 @@ async function requireAdmin() {
 export async function GET() {
   const access = await requireAdmin();
   if ("response" in access) return access.response;
-  const items = await getDb().select().from(withdrawals).where(eq(withdrawals.status, "pending_review")).orderBy(desc(withdrawals.id));
+  const items = await getDb().select({ id: withdrawals.id, ownerId: withdrawals.ownerId, payoutAccountId: withdrawals.payoutAccountId, amountCents: withdrawals.amountCents, method: withdrawals.method, destination: withdrawals.destination, status: withdrawals.status, reviewedAt: withdrawals.reviewedAt, createdAt: withdrawals.createdAt, payoutBankName: payoutAccounts.bankName, payoutAccountLast4: payoutAccounts.accountNumberLast4, payoutAccountStatus: payoutAccounts.status }).from(withdrawals).leftJoin(payoutAccounts, eq(withdrawals.payoutAccountId, payoutAccounts.id)).where(eq(withdrawals.status, "pending_review")).orderBy(desc(withdrawals.id));
   return Response.json({ withdrawals: items });
 }
 

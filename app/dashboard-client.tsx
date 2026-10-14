@@ -25,6 +25,7 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
   const [productImage, setProductImage] = useState<File | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState("");
   const [productMessage, setProductMessage] = useState("");
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [productEdits, setProductEdits] = useState<Record<number, { title: string; description: string; category: string; brand: string; model: string; storage: string; color: string; condition: string; warrantyMonths: string; price: string; stock: string; saleMode: string; expiresAt: string }>>({});
@@ -54,6 +55,7 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
     if (profileResponse.ok) {
       const payload = await readJson(profileResponse);
       setProfileStatus(payload.profile?.status ?? null);
+      setProfileName(payload.profile?.legalName?.trim() ?? "");
     }
   }
 
@@ -162,8 +164,11 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
     <section className="landing-trust"><b>¿Qué ocurre después?</b><span>El comprador registra una reserva y comprobante. El pedido oficial solo se genera para el vendedor cuando administración confirma el depósito.</span></section>
   </main>;
 
+  const accountName = profileName || user.displayName || user.email;
+  const accountRole = store ? "Vendedor y comprador" : "Comprador";
+
   return <main className="dashboard-shell">
-    <nav className="dashboard-nav"><Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.png" alt="StreamLock" /></Link><span>Centro de negocios</span><Link href="/my-orders" prefetch={false}>Mis compras</Link><Link href="/profile" prefetch={false}>Perfil protegido</Link>{user ? <a href={signOutHref} target="_top" rel="noreferrer" className="account-link">{user.displayName} · Cerrar sesión</a> : <a href={signInHref} target="_top" rel="noreferrer" className="account-link">Iniciar sesión</a>}</nav>
+    <nav className="dashboard-nav"><Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.png" alt="StreamLock" /></Link><span>Centro de negocios</span><Link href="/my-orders" prefetch={false}>Mis compras</Link><Link href="/profile" prefetch={false}>Perfil protegido</Link>{user ? <a href={signOutHref} target="_top" rel="noreferrer" className="account-link"><span className="account-name">{accountName}</span><small className="account-role">{accountRole}</small><span className="account-logout">· Cerrar sesión</span></a> : <a href={signInHref} target="_top" rel="noreferrer" className="account-link">Iniciar sesión</a>}</nav>
     <section className="dashboard-hero"><div><p className="kicker">PARA NEGOCIOS · PERFIL VERIFICADO</p><h1>Vende con respaldo<br /><em>en cada live.</em></h1><p className="lead">Crea tu negocio, publica tu catálogo y comparte el código de cada producto con tu audiencia.</p><ProductCodeSearch />{store && products.length > 0 && <div className="product-code-mini"><b>Códigos listos para compartir</b>{products.map(item => <span key={item.id}>{item.title} · <strong>{item.publicCode ?? "pendiente"}</strong></span>)}</div>}</div><div className="trust-card"><span>01</span><b>Datos del negocio</b><small>Necesarios para iniciar la verificación.</small><div className="progress"><i /></div><p>1 de 4 pasos</p></div></section>
     <section className="onboarding-grid"><form onSubmit={createStore} className="store-form"><h2>Cuéntanos sobre tu negocio</h2><p>Este nombre aparecerá en tu vitrina y enlaces de venta.</p><label>Nombre comercial<input value={name} onChange={e => setName(e.target.value)} placeholder="Ej. Casa Morena" required minLength={3} /></label><label>Red social principal<select value={network} onChange={e => setNetwork(e.target.value)}><option>Instagram</option><option>TikTok</option><option>Facebook</option><option>WhatsApp</option></select></label><button disabled={loading}>{loading ? "Creando…" : "Crear mi vitrina →"}</button>{message && <output>{message}</output>}</form>
       <aside className="preview-card"><p className="kicker">VISTA PREVIA</p><div className="store-preview"><div className="preview-cover" /><div className="preview-avatar">{name ? name.slice(0,2).toUpperCase() : "TU"}</div><h3>{name || "Tu negocio"} <span>{store?.status === "verified" ? "✓" : "•"}</span></h3><p>{network} · {store?.status === "verified" ? "Vitrina verificada" : store?.status === "rejected" ? "Requiere actualización" : "Pendiente de verificación"}</p><div className="preview-line" /><div className="preview-line short" /></div>{store && <div className="created-store"><b>/{store.slug}</b><span>{store.status === "verified" ? "Vitrina verificada" : "Vitrina creada"}</span></div>}</aside>

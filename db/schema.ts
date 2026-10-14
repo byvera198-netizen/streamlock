@@ -63,6 +63,7 @@ export const orders = sqliteTable("orders", {
   shippingName: text("shipping_name"),
   shippingPhone: text("shipping_phone"),
   shippingAddress: text("shipping_address"),
+  legalAcceptedAt: text("legal_accepted_at"),
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
 });
 

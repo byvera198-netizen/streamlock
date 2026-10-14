@@ -9,7 +9,8 @@ const SERVICE_FEE_RATE = 0.07;
 export async function POST(request: Request) {
   const buyer = await getChatGPTUser();
   if (!buyer) return Response.json({ error: "Inicia sesión para continuar con tu compra." }, { status: 401 });
-  const body = await request.json() as { productId?: number; quantity?: number; deliveryMethod?: string };
+  const body = await request.json() as { productId?: number; quantity?: number; deliveryMethod?: string; legalAccepted?: boolean };
+  if (body.legalAccepted !== true) return Response.json({ error: "Acepta los términos, privacidad y política de reembolsos para continuar." }, { status: 400 });
   const productId = Number(body.productId);
   const quantity = Number(body.quantity ?? 1);
   if (!Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
     const result = await db.transaction(async (tx) => {
       const [reserved] = await tx.update(products).set({ stock: sql`${products.stock} - ${quantity}` }).where(and(eq(products.id, productId), gte(products.stock, quantity))).returning({ id: products.id });
       if (!reserved) return null;
-      const [order] = await tx.insert(orders).values({ buyerId: buyer.userId, storeId: item.store.id, productId, quantity, unitPriceCents: item.product.priceCents, subtotalCents, feeCents, totalCents, deliveryMethod, shippingName: profile.legalName, shippingPhone: profile.phone, shippingAddress: profile.address, status: "payment_pending" }).returning();
+      const [order] = await tx.insert(orders).values({ buyerId: buyer.userId, storeId: item.store.id, productId, quantity, unitPriceCents: item.product.priceCents, subtotalCents, feeCents, totalCents, deliveryMethod, shippingName: profile.legalName, shippingPhone: profile.phone, shippingAddress: profile.address, legalAcceptedAt: new Date().toISOString(), status: "payment_pending" }).returning();
       const [escrow] = await tx.insert(escrowLedger).values({ orderId: order.id, amountCents: subtotalCents, feeCents, status: "awaiting_payment" }).returning();
       return { order, escrow };
     });

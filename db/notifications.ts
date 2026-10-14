@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { getPublicUrl } from "../app/public-url";
 import { eq } from "drizzle-orm";
 import { notificationPreferences, notifications } from "./schema";
 import type { getDb } from "./index";
@@ -11,10 +12,10 @@ export async function createNotification(db: ReturnType<typeof getDb>, values: {
   const [notification] = await db.insert(notifications).values({ ...values, orderId: values.orderId ?? null, createdAt: new Date().toISOString() }).returning({ id: notifications.id });
   if (!notification) return;
   const [preferences] = await db.select({ email: notificationPreferences.email, emailAddress: notificationPreferences.emailAddress }).from(notificationPreferences).where(eq(notificationPreferences.userId, values.userId)).limit(1);
-  const emailEnv = env as unknown as { RESEND_API_KEY?: string; STREAMLOCK_EMAIL_FROM?: string; STREAMLOCK_PUBLIC_URL?: string };
+  const emailEnv = env as unknown as { RESEND_API_KEY?: string; STREAMLOCK_EMAIL_FROM?: string };
   if (!preferences?.email || !preferences.emailAddress || !emailEnv.RESEND_API_KEY || !emailEnv.STREAMLOCK_EMAIL_FROM) return;
   try {
-    const publicUrl = (emailEnv.STREAMLOCK_PUBLIC_URL?.trim() || "https://streamlock.profebyron.workers.dev").replace(/\/+$/, "");
+    const publicUrl = getPublicUrl();
     const appUrl = `${publicUrl}/`;
     const orderLabel = values.orderId ? `Pedido #${values.orderId}` : "Actividad de tu cuenta";
     const safeTitle = escapeHtml(values.title);

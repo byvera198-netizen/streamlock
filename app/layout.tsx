@@ -2,31 +2,32 @@ import type { Metadata } from "next";
 import "./globals.css";
 import SupportWhatsApp from "./components/support-whatsapp";
 import Link from "next/link";
+import { getPublicUrl } from "./public-url";
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://streamlock.profebyron.workers.dev"),
-  title: "StreamLock — Negocios verificados",
-  description: "Comercio social protegido para vendedores y compradores.",
-  applicationName: "StreamLock",
-  category: "shopping",
-  icons: {
-    icon: "/streamlock-logo.jpg",
-    shortcut: "/streamlock-logo.jpg",
-  },
-  openGraph: {
-    type: "website",
-    siteName: "StreamLock",
-    title: "StreamLock — Comercio social protegido",
-    description: "Compra y vende desde redes sociales con comprobantes, entregas y soporte en un solo lugar.",
-    images: [{ url: "/streamlock-logo.jpg", alt: "StreamLock" }],
-  },
-  twitter: {
-    card: "summary",
-    title: "StreamLock — Comercio social protegido",
-    description: "Compra y vende desde redes sociales con comprobantes, entregas y soporte en un solo lugar.",
-    images: ["/streamlock-logo.jpg"],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const publicUrl = getPublicUrl();
+  return {
+    metadataBase: new URL(publicUrl),
+    title: "StreamLock — Negocios verificados",
+    description: "Comercio social protegido para vendedores y compradores.",
+    applicationName: "StreamLock",
+    category: "shopping",
+    icons: { icon: "/streamlock-logo.jpg", shortcut: "/streamlock-logo.jpg" },
+    openGraph: {
+      type: "website",
+      siteName: "StreamLock",
+      title: "StreamLock — Comercio social protegido",
+      description: "Compra y vende desde redes sociales con comprobantes, entregas y soporte en un solo lugar.",
+      images: [{ url: `${publicUrl}/streamlock-logo.jpg`, alt: "StreamLock" }],
+    },
+    twitter: {
+      card: "summary",
+      title: "StreamLock — Comercio social protegido",
+      description: "Compra y vende desde redes sociales con comprobantes, entregas y soporte en un solo lugar.",
+      images: [`${publicUrl}/streamlock-logo.jpg`],
+    },
+  };
+}
 
 export default function RootLayout({
   children,

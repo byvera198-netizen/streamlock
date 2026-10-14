@@ -143,3 +143,6 @@ The portable build runs Vinext directly without a host `timeout` command. The ma
 
 - [vinext Documentation](https://github.com/cloudflare/vinext)
 - [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+## Dominio propio (opcional)
+
+StreamLock funciona sin costo con `streamlock.profebyron.workers.dev`. Para conectar un dominio propio más adelante, configura la variable pública `STREAMLOCK_PUBLIC_URL` en el entorno Production con la URL HTTPS final y agrega el dominio personalizado al Worker desde Cloudflare. La aplicación usa esa variable para metadatos, enlaces canónicos, sitemap, robots y enlaces incluidos en correos; si no existe, conserva automáticamente el dominio gratuito actual.

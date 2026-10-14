@@ -2,12 +2,12 @@ import type { MetadataRoute } from "next";
 import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { getDb } from "../db";
 import { products, stores } from "../db/schema";
-
-const baseUrl = "https://streamlock.profebyron.workers.dev";
+import { getPublicUrl } from "./public-url";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = getPublicUrl();
   const staticPages = ["/", "/terms", "/privacy", "/refunds", "/mobile-reference"].map((path) => ({
     url: `${baseUrl}${path}`,
     changeFrequency: "weekly" as const,

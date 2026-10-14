@@ -7,6 +7,7 @@ import Link from "next/link";
 import { supportContact } from "../../site-config";
 import CatalogClient from "./catalog-client";
 import ShareStoreButton from "./share-store-button";
+import { getPublicUrl } from "../../public-url";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,8 @@ export default async function Storefront({ params }: { params: Promise<{ slug: s
     .where(and(eq(products.storeId, store.id), eq(products.status, "published"), gt(products.stock, 0), or(eq(products.saleMode, "store"), and(eq(products.saleMode, "live"), or(isNull(products.expiresAt), gt(products.expiresAt, new Date().toISOString()))))))
     .orderBy(products.id);
   const isVerified = store.status === "verified";
-  const storefrontUrl = `https://streamlock.profebyron.workers.dev/s/${store.slug}`;
+  const publicUrl = getPublicUrl();
+  const storefrontUrl = `${publicUrl}/s/${store.slug}`;
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Store",
@@ -56,7 +58,7 @@ export default async function Storefront({ params }: { params: Promise<{ slug: s
       itemListElement: catalog.map((product) => ({
         "@type": "Offer",
         name: product.title,
-        url: `https://streamlock.profebyron.workers.dev/checkout/${product.id}`,
+        url: `${publicUrl}/checkout/${product.id}`,
         priceCurrency: "USD",
         price: (product.priceCents / 100).toFixed(2),
         availability: "https://schema.org/InStock",

@@ -109,7 +109,7 @@ export default function CheckoutClient({ product, store }: { product: Product; s
   return (
     <main className="checkout-shell">
       <header className="storefront-header">
-        <Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.jpg" alt="StreamLock" /></Link>
+        <Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.png" alt="StreamLock" /></Link>
         <span className="secure-label">Checkout protegido · {store.name}</span>
       </header>
       <section className="checkout-card">

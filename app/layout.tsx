@@ -14,19 +14,19 @@ export async function generateMetadata(): Promise<Metadata> {
     description: "Comercio social protegido para vendedores y compradores.",
     applicationName: "StreamLock",
     category: "shopping",
-    icons: { icon: "/streamlock-logo.jpg", shortcut: "/streamlock-logo.jpg" },
+    icons: { icon: "/streamlock-mark.png", shortcut: "/streamlock-mark.png" },
     openGraph: {
       type: "website",
       siteName: "StreamLock",
       title: "StreamLock — Comercio social protegido",
       description: "Compra y vende desde redes sociales con comprobantes, entregas y soporte en un solo lugar.",
-      images: [{ url: `${publicUrl}/streamlock-logo.jpg`, alt: "StreamLock" }],
+      images: [{ url: `${publicUrl}/streamlock-logo.png`, alt: "StreamLock" }],
     },
     twitter: {
       card: "summary",
       title: "StreamLock — Comercio social protegido",
       description: "Compra y vende desde redes sociales con comprobantes, entregas y soporte en un solo lugar.",
-      images: [`${publicUrl}/streamlock-logo.jpg`],
+      images: [`${publicUrl}/streamlock-logo.png`],
     },
   };
 }

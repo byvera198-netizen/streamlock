@@ -131,6 +131,11 @@ const checks = [
     expected: (response) => response.status === 403,
   },
   {
+    name: "revelación bancaria protegida",
+    request: () => fetch(`${baseUrl}/api/admin/payout-accounts/reveal`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accountId: 1, reason: "prueba de autorización" }) }),
+    expected: (response) => response.status === 403,
+  },
+  {
     name: "catálogo privado",
     request: () => fetch(`${baseUrl}/api/products`),
     expected: (response) => response.status === 401,

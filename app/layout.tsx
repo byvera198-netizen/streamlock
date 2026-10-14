@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./identity.css";
+import "./admin/overview.css";
 import SupportWhatsApp from "./components/support-whatsapp";
 import Link from "next/link";
 import { getPublicUrl } from "./public-url";

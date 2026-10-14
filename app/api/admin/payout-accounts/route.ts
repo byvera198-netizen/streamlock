@@ -18,7 +18,7 @@ export async function GET() {
   const access = await requireAdmin();
   if ("response" in access) return access.response;
   const accounts = await getDb().select({ id: payoutAccounts.id, ownerId: payoutAccounts.ownerId, bankName: payoutAccounts.bankName, accountType: payoutAccounts.accountType, accountHolderName: payoutAccounts.accountHolderName, accountNumberLast4: payoutAccounts.accountNumberLast4, status: payoutAccounts.status, createdAt: payoutAccounts.createdAt, updatedAt: payoutAccounts.updatedAt })
-    .from(payoutAccounts).where(eq(payoutAccounts.status, "pending_review")).orderBy(desc(payoutAccounts.id));
+    .from(payoutAccounts).orderBy(desc(payoutAccounts.id));
   return Response.json({ accounts });
 }
 

@@ -15,6 +15,10 @@ type PayoutAccount = { id: number; bankName: string; accountType: string; accoun
 type DashboardUser = { displayName: string; email: string };
 type ProductReferenceDraft = { title?: string; category?: string; brand?: string; model?: string; storage?: string; price?: string };
 
+function ProductSharePanel({ products, onCopy, onShare }: { products: Product[]; onCopy: (item: Product) => Promise<void>; onShare: (item: Product) => Promise<void> }) {
+  return <section className="product-share-panel"><div><p className="kicker">LISTOS PARA TU LIVE</p><h2>Comparte tus productos</h2><p>Copia el código o comparte el enlace directo sin buscarlo en otra pantalla.</p></div><div className="product-share-list">{products.map(item => <article key={item.id}><div><b>{item.title}</b><span>{item.saleMode === "live" ? "Venta Live · temporal" : "Tienda · permanente"} · {item.stock} unidades</span><strong>{item.publicCode ?? "Código pendiente"}</strong></div><div className="product-share-actions"><button type="button" onClick={() => void onCopy(item)} disabled={!item.publicCode}>Copiar código</button><button type="button" onClick={() => void onShare(item)} disabled={!item.publicCode}>Compartir enlace</button></div></article>)}</div></section>;
+}
+
 export default function DashboardClient({ user, signInHref, signOutHref }: { user: DashboardUser | null; signInHref: string; signOutHref: string }) {
   const [store, setStore] = useState<Store | null>(null);
   const [name, setName] = useState("");
@@ -157,6 +161,39 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
     setProductMessage("");
   }
 
+  async function copyProductCode(item: Product) {
+    if (!item.publicCode) {
+      setProductMessage("Este producto todavía no tiene un código disponible.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(item.publicCode);
+      setProductMessage(`Código ${item.publicCode} copiado. Ya puedes pegarlo en tu live.`);
+    } catch {
+      setProductMessage("No se pudo copiar automáticamente. Selecciona y copia el código manualmente.");
+    }
+  }
+
+  async function shareProduct(item: Product) {
+    if (!item.publicCode) {
+      setProductMessage("Este producto todavía no tiene un código disponible.");
+      return;
+    }
+    const url = `${window.location.origin}/checkout/${item.id}`;
+    const text = `${item.title} · Código StreamLock: ${item.publicCode}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${item.title} · StreamLock`, text, url });
+        setProductMessage("Producto listo para compartir.");
+        return;
+      }
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      setProductMessage("Código y enlace copiados. Ya puedes pegarlos en tu live o comentario fijado.");
+    } catch {
+      setProductMessage("No se pudo compartir. Puedes copiar el código y el enlace manualmente.");
+    }
+  }
+
   if (!user) return <main className="landing-shell">
     <nav className="landing-nav"><Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.png" alt="StreamLock" /></Link><span>Compra y vende con respaldo</span><a href={signInHref} target="_top" rel="noreferrer" className="account-link">Iniciar sesión</a></nav>
     <section className="landing-hero"><p className="kicker">STREAMLOCK · COMERCIO SOCIAL SEGURO</p><h1>Tu live vende.<br /><em>StreamLock respalda.</em></h1><p className="lead">Una forma clara de comprar y vender por redes sociales: cada producto tiene un código, cada pago se revisa y cada entrega queda registrada.</p></section>
@@ -166,8 +203,10 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
 
   const accountName = profileName || user.displayName || user.email;
   const accountRole = store ? "Vendedor y comprador" : "Comprador";
+  const productSharePanel = store && products.length > 0 ? <ProductSharePanel products={products} onCopy={copyProductCode} onShare={shareProduct} /> : null;
 
   return <main className="dashboard-shell">
+    {productSharePanel}
     <nav className="dashboard-nav"><Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.png" alt="StreamLock" /></Link><span>Centro de negocios</span><Link href="/my-orders" prefetch={false}>Mis compras</Link><Link href="/profile" prefetch={false}>Perfil protegido</Link>{user ? <a href={signOutHref} target="_top" rel="noreferrer" className="account-link"><span className="account-name">{accountName}</span><small className="account-role">{accountRole}</small><span className="account-logout">· Cerrar sesión</span></a> : <a href={signInHref} target="_top" rel="noreferrer" className="account-link">Iniciar sesión</a>}</nav>
     <section className="dashboard-hero"><div><p className="kicker">PARA NEGOCIOS · PERFIL VERIFICADO</p><h1>Vende con respaldo<br /><em>en cada live.</em></h1><p className="lead">Crea tu negocio, publica tu catálogo y comparte el código de cada producto con tu audiencia.</p><ProductCodeSearch />{store && products.length > 0 && <div className="product-code-mini"><b>Códigos listos para compartir</b>{products.map(item => <span key={item.id}>{item.title} · <strong>{item.publicCode ?? "pendiente"}</strong></span>)}</div>}</div><div className="trust-card"><span>01</span><b>Datos del negocio</b><small>Necesarios para iniciar la verificación.</small><div className="progress"><i /></div><p>1 de 4 pasos</p></div></section>
     <section className="onboarding-grid"><form onSubmit={createStore} className="store-form"><h2>Cuéntanos sobre tu negocio</h2><p>Este nombre aparecerá en tu vitrina y enlaces de venta.</p><label>Nombre comercial<input value={name} onChange={e => setName(e.target.value)} placeholder="Ej. Casa Morena" required minLength={3} /></label><label>Red social principal<select value={network} onChange={e => setNetwork(e.target.value)}><option>Instagram</option><option>TikTok</option><option>Facebook</option><option>WhatsApp</option></select></label><button disabled={loading}>{loading ? "Creando…" : "Crear mi vitrina →"}</button>{message && <output>{message}</output>}</form>

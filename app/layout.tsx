@@ -5,6 +5,7 @@ import "./admin/overview.css";
 import SupportWhatsApp from "./components/support-whatsapp";
 import Link from "next/link";
 import { getPublicUrl } from "./public-url";
+import GlobalQuickNav from "./components/global-quick-nav";
 
 export async function generateMetadata(): Promise<Metadata> {
   const publicUrl = getPublicUrl();
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body className="antialiased">
         {children}
         <SupportWhatsApp />
+        <GlobalQuickNav />
         <footer className="global-footer"><span>StreamLock · Comercio social protegido</span><nav><Link href="/terms">Términos</Link><Link href="/privacy">Privacidad</Link><Link href="/refunds">Reembolsos y disputas</Link></nav></footer>
       </body>
     </html>

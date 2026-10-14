@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { products, stores } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
@@ -37,10 +37,14 @@ export async function POST(request: Request) {
   const [store] = await db.select({ id: stores.id }).from(stores).where(and(eq(stores.id, body.storeId), eq(stores.ownerId, user.userId))).limit(1);
   if (!store) return Response.json({ error: "El negocio no pertenece a esta cuenta." }, { status: 403 });
   const titles = catalog.map(item => item.title);
-  const existing = await db.select({ title: products.title }).from(products).where(and(eq(products.storeId, store.id), inArray(products.title, titles)));
+  const existing = await db.select({ title: products.title }).from(products).where(eq(products.storeId, store.id));
   const existingTitles = new Set(existing.map(item => item.title));
   const pending = catalog.filter(item => !existingTitles.has(item.title));
   if (!pending.length) return Response.json({ created: 0, skipped: catalog.length, message: "El catálogo base de iPhone ya estaba cargado." });
-  const inserted = await db.insert(products).values(pending.map(item => ({ storeId: store.id, title: item.title, description: item.description, category: "mobile", brand: "Apple", model: item.model, storage: item.storage, color: null, condition: item.condition, warrantyMonths: 0, priceCents: item.price * 100, stock: 20, status: "draft", imageUrl: item.imageUrl, saleMode: "store", expiresAt: null, publicCode: createPublicProductCode() }))).returning({ id: products.id, title: products.title, status: products.status });
+  const inserted: Array<{ id: number; title: string; status: string }> = [];
+  for (const item of pending) {
+    const [row] = await db.insert(products).values({ storeId: store.id, title: item.title, description: item.description, category: "mobile", brand: "Apple", model: item.model, storage: item.storage, color: null, condition: item.condition, warrantyMonths: 0, priceCents: item.price * 100, stock: 20, status: "draft", imageUrl: item.imageUrl, saleMode: "store", expiresAt: null, publicCode: createPublicProductCode() }).returning({ id: products.id, title: products.title, status: products.status });
+    if (row) inserted.push(row);
+  }
   return Response.json({ created: inserted.length, skipped: catalog.length - inserted.length, products: inserted, message: "Catálogo base guardado como borrador. Verifica precio, foto, stock, IMEI y homologación antes de publicar." }, { status: 201 });
 }

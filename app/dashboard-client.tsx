@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import NotificationsPanel from "./components/notifications-panel";
 import ProductCodeSearch from "./components/product-code-search";
+import IPhoneCatalogImport from "./components/iphone-catalog-import";
 import { readJson } from "../lib/client-json";
 
 type Store = { id: number; name: string; slug: string; socialNetwork: string; status: string };
@@ -215,6 +216,7 @@ export default function DashboardClient({ user, signInHref, signOutHref }: { use
 
   return <main className="dashboard-shell">
     {productSharePanel}
+    {store && <IPhoneCatalogImport storeId={store.id} onImported={() => void loadCatalog()} />}
     <nav className="dashboard-nav"><Link href="/" prefetch={false} className="brand-logo"><img src="/streamlock-logo.png" alt="StreamLock" /></Link><span>Centro de negocios</span><Link href="/my-orders" prefetch={false}>Mis compras</Link><Link href="/profile" prefetch={false}>Perfil protegido</Link>{user ? <a href={signOutHref} target="_top" rel="noreferrer" className="account-link"><span className="account-name">{accountName}</span><small className="account-role">{accountRole}</small><span className="account-logout">· Cerrar sesión</span></a> : <a href={signInHref} target="_top" rel="noreferrer" className="account-link">Iniciar sesión</a>}</nav>
     <section className="dashboard-hero"><div><p className="kicker">PARA NEGOCIOS · PERFIL VERIFICADO</p><h1>Vende con respaldo<br /><em>en cada live.</em></h1><p className="lead">Crea tu negocio, publica tu catálogo y comparte el código de cada producto con tu audiencia.</p><ProductCodeSearch />{store && publishedProducts.length > 0 && <div className="product-code-mini"><b>Códigos listos para compartir</b>{publishedProducts.map(item => <span key={item.id}>{item.title} · <strong>{item.publicCode ?? "pendiente"}</strong></span>)}</div>}</div><div className="trust-card"><span>01</span><b>Datos del negocio</b><small>Necesarios para iniciar la verificación.</small><div className="progress"><i /></div><p>1 de 4 pasos</p></div></section>
     <section className="onboarding-grid"><form onSubmit={createStore} className="store-form"><h2>Cuéntanos sobre tu negocio</h2><p>Este nombre aparecerá en tu vitrina y enlaces de venta.</p><label>Nombre comercial<input value={name} onChange={e => setName(e.target.value)} placeholder="Ej. Casa Morena" required minLength={3} /></label><label>Red social principal<select value={network} onChange={e => setNetwork(e.target.value)}><option>Instagram</option><option>TikTok</option><option>Facebook</option><option>WhatsApp</option></select></label><button disabled={loading}>{loading ? "Creando…" : "Crear mi vitrina →"}</button>{message && <output>{message}</output>}</form>

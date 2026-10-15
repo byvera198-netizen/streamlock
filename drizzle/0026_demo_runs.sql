@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS demo_runs (
+  id TEXT PRIMARY KEY NOT NULL,
+  created_by TEXT NOT NULL,
+  label TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS demo_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  run_id TEXT NOT NULL,
+  entity TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS demo_records_run_idx ON demo_records(run_id);

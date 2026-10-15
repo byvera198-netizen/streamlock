@@ -3,10 +3,11 @@ import { env } from "cloudflare:workers";
 import { getDb } from "../../../../../db";
 import { bankTransferSubmissions } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../chatgpt-auth";
+import { isAdminEmail } from "../../../../admin-access";
 
 export async function GET(request: Request) {
   const user = await getChatGPTUser();
-  if (!user || user.email.toLowerCase() !== env.STREAMLOCK_ADMIN_EMAIL?.trim().toLowerCase()) return Response.json({ error: "No autorizado." }, { status: 403 });
+  if (!user || !isAdminEmail(user.email)) return Response.json({ error: "No autorizado." }, { status: 403 });
   const submissionId = Number(new URL(request.url).searchParams.get("submissionId"));
   if (!Number.isInteger(submissionId)) return Response.json({ error: "Comprobante inválido." }, { status: 400 });
   const [submission] = await getDb().select().from(bankTransferSubmissions).where(eq(bankTransferSubmissions.id, submissionId)).limit(1);

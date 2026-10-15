@@ -1,13 +1,12 @@
-import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { sendSupportEmail } from "../../../email";
 import { allowRateLimit, recordAuditEvent } from "../../../security-guard";
+import { hasAdminConfiguration, isAdminEmail } from "../../../admin-access";
 
 export async function POST(request: Request) {
   const user = await getChatGPTUser();
-  const configuredEmail = env.STREAMLOCK_ADMIN_EMAIL?.trim().toLowerCase();
-  if (!configuredEmail) return Response.json({ error: "El correo administrativo aún no está configurado." }, { status: 503 });
-  if (!user || user.email.toLowerCase() !== configuredEmail) return Response.json({ error: "No autorizado." }, { status: 403 });
+  if (!hasAdminConfiguration()) return Response.json({ error: "El correo administrativo aún no está configurado." }, { status: 503 });
+  if (!user || !isAdminEmail(user.email)) return Response.json({ error: "No autorizado." }, { status: 403 });
   if (!(await allowRateLimit(request, "admin-email-test", user.userId, 3, 60 * 60 * 1000))) return Response.json({ error: "Límite de pruebas alcanzado. Intenta nuevamente más tarde." }, { status: 429 });
 
   const sent = await sendSupportEmail(

@@ -5,6 +5,7 @@ declare namespace Cloudflare {
     RECEIPTS: R2Bucket;
     PAYMENT_WEBHOOK_SECRET?: string;
     STREAMLOCK_ADMIN_EMAIL?: string;
+    STREAMLOCK_ADMIN_EMAILS?: string;
     RESEND_API_KEY?: string;
     STREAMLOCK_EMAIL_FROM?: string;
     ACCESS_SESSION_SECRET?: string;

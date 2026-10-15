@@ -1,10 +1,11 @@
 import { env } from "cloudflare:workers";
+import { hasAdminConfiguration } from "../../../app/admin-access";
 
 export async function GET() {
   const checks = {
     database: false,
     storage: Boolean(env.RECEIPTS),
-    email: Boolean(env.RESEND_API_KEY?.trim() && env.STREAMLOCK_EMAIL_FROM?.trim() && env.STREAMLOCK_ADMIN_EMAIL?.trim()),
+    email: Boolean(env.RESEND_API_KEY?.trim() && env.STREAMLOCK_EMAIL_FROM?.trim() && hasAdminConfiguration()),
   };
   try {
     if (env.DB) {

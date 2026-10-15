@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import { env } from "cloudflare:workers";
+import { hasAdminConfiguration, isAdminEmail } from "../../../admin-access";
 import { getDb } from "../../../../db";
 import { bankTransferSubmissions, escrowLedger, orders, products, stores } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
@@ -8,9 +8,8 @@ import { sendSupportEmail } from "../../../email";
 
 async function requireAdmin() {
   const user = await getChatGPTUser();
-  const configuredEmail = env.STREAMLOCK_ADMIN_EMAIL?.trim().toLowerCase();
-  if (!configuredEmail) return { response: Response.json({ error: "El administrador aún no está configurado." }, { status: 503 }) };
-  if (!user || user.email.toLowerCase() !== configuredEmail) return { response: Response.json({ error: "No autorizado." }, { status: 403 }) };
+  if (!hasAdminConfiguration()) return { response: Response.json({ error: "El administrador aún no está configurado." }, { status: 503 }) };
+  if (!user || !isAdminEmail(user.email)) return { response: Response.json({ error: "No autorizado." }, { status: 403 }) };
   return { user };
 }
 

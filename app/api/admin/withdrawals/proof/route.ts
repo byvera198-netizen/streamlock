@@ -3,11 +3,11 @@ import { env } from "cloudflare:workers";
 import { getDb } from "../../../../../db";
 import { withdrawals } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../chatgpt-auth";
+import { isAdminEmail } from "../../../../admin-access";
 
 export async function GET(request: Request) {
   const user = await getChatGPTUser();
-  const adminEmail = env.STREAMLOCK_ADMIN_EMAIL?.trim().toLowerCase();
-  if (!adminEmail || !user || user.email.toLowerCase() !== adminEmail) return Response.json({ error: "No autorizado." }, { status: 403 });
+  if (!user || !isAdminEmail(user.email)) return Response.json({ error: "No autorizado." }, { status: 403 });
   const withdrawalId = Number(new URL(request.url).searchParams.get("withdrawalId"));
   if (!Number.isInteger(withdrawalId)) return Response.json({ error: "Retiro inválido." }, { status: 400 });
   const [withdrawal] = await getDb().select({ transferProofKey: withdrawals.transferProofKey }).from(withdrawals).where(eq(withdrawals.id, withdrawalId)).limit(1);

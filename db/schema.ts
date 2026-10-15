@@ -196,3 +196,19 @@ export const withdrawals = sqliteTable("withdrawals", {
   reviewedAt: text("reviewed_at"),
   createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
 });
+
+export const demoRuns = sqliteTable("demo_runs", {
+  id: text("id").primaryKey(),
+  createdBy: text("created_by").notNull(),
+  label: text("label").notNull(),
+  createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
+  deletedAt: text("deleted_at"),
+});
+
+export const demoRecords = sqliteTable("demo_records", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  runId: text("run_id").notNull(),
+  entity: text("entity").notNull(),
+  entityId: text("entity_id").notNull(),
+  createdAt: text("created_at").notNull().default("CURRENT_TIMESTAMP"),
+});

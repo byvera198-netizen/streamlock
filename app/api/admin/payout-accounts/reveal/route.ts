@@ -1,15 +1,14 @@
 import { eq } from "drizzle-orm";
-import { env } from "cloudflare:workers";
 import { getDb } from "../../../../../db";
 import { payoutAccounts } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../chatgpt-auth";
 import { recordAuditEvent } from "../../../../security-guard";
 import { decryptSensitiveValue } from "../../../../secure-data";
+import { isAdminEmail } from "../../../../admin-access";
 
 export async function POST(request: Request) {
   const user = await getChatGPTUser();
-  const adminEmail = env.STREAMLOCK_ADMIN_EMAIL?.trim().toLowerCase();
-  if (!adminEmail || !user || user.email.toLowerCase() !== adminEmail) return Response.json({ error: "No autorizado." }, { status: 403 });
+  if (!user || !isAdminEmail(user.email)) return Response.json({ error: "No autorizado." }, { status: 403 });
   const body = await request.json() as { accountId?: number; reason?: string };
   const accountId = Number(body.accountId);
   const reason = body.reason?.trim().replace(/\s+/g, " ") ?? "";
